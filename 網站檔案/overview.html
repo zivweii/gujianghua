@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>顧講話・題目總覽</title>
+<style>
+  body{margin:0;background:#FAF8F4;color:#2B2B2B;font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;padding:20px}
+  h1{font-size:26px;margin:0 0 6px}
+  p.note{color:#8A857C;margin:0 0 20px;font-size:15px}
+  h2{font-size:22px;margin:28px 0 12px;padding-top:8px;border-top:1px solid #ECE8E1}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  figure{margin:0;background:#fff;border-radius:14px;padding:8px;text-align:center}
+  figure img{width:100%;aspect-ratio:1;object-fit:contain}
+  figcaption{font-size:18px;font-weight:600;margin-top:4px}
+  figcaption small{display:block;font-size:12px;font-weight:400;color:#8A857C}
+  nav{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+  nav a{background:#fff;border-radius:10px;padding:6px 12px;color:#3E7C6B;text-decoration:none;font-size:15px}
+</style>
+</head>
+<body>
+<h1>題目總覽</h1>
+<p class="note">每張圖下方是正確答案，灰色小字是也算答對的其他說法。看到不滿意的圖，請告訴我類別和編號。</p>
+<nav id="nav"></nav>
+<div id="list"></div>
+<script src="data/index.js"></script>
+<script>
+const list = document.getElementById("list"), nav = document.getElementById("nav");
+DATA.forEach(c => {
+  nav.insertAdjacentHTML("beforeend", `<a href="#${c.id}">${c.name}</a>`);
+  list.insertAdjacentHTML("beforeend", `<h2 id="${c.id}">${c.name}（${c.count} 題）</h2><div class="grid" id="g-${c.id}"></div>`);
+  const s = document.createElement("script");
+  s.src = `data/${c.id}.js`;
+  s.onload = () => {
+    document.getElementById("g-" + c.id).innerHTML = window.CAT[c.id].map((it, i) =>
+      `<figure><img src="${it.img}" loading="lazy" alt=""><figcaption>${i+1}. ${it.name}${it.accept.length?`<small>${it.accept.join("、")}</small>`:""}</figcaption></figure>`).join("");
+  };
+  document.body.appendChild(s);
+});
+</script>
+</body>
+</html>
