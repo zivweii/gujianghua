@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>顧講話</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="顧講話">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
+<style>
+  :root{
+    --bg:#FAF8F4; --card:#FFFFFF; --ink:#2B2B2B; --soft:#8A857C;
+    --accent:#3E7C6B; --accent-soft:#E3EFEA; --line:#ECE8E1;
+    --ok:#3E7C6B; --retry:#B07A2E;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"PingFang TC","Noto Sans TC",sans-serif;
+    -webkit-user-select:none;user-select:none;overflow:hidden}
+  .app{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;
+    grid-template-areas:"top top" "pic nav" "tools nav"}
+  .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
+  .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;min-height:0;position:relative;overflow:hidden}
+  .pic svg,.pic img{max-width:80%;max-height:70%;object-fit:contain}
+  .hint{min-height:64px;font-size:52px;font-weight:600;letter-spacing:6px;color:var(--ink);margin-top:8px}
+  .feedback{position:absolute;left:0;right:0;bottom:16px;text-align:center;font-size:28px;font-weight:600;min-height:34px}
+  .feedback.ok{color:var(--ok)} .feedback.retry{color:var(--retry)}
+  .heard{display:block;font-size:16px;font-weight:400;color:var(--soft);margin-top:4px}
+  .nav{grid-area:nav;display:flex;flex-direction:column;gap:12px;justify-content:center}
+  .tools{grid-area:tools;display:flex;justify-content:center;align-items:center;gap:28px}
+  button{font:inherit;border:0;background:var(--card);color:var(--ink);border-radius:20px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;touch-action:manipulation}
+  button:active{transform:scale(.97)}
+  button:disabled{opacity:.3}
+  button svg{width:30px;height:30px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .nav button{width:120px;height:84px;font-size:18px}
+  .tool{width:120px;height:96px;font-size:18px}
+  .mic{width:120px;height:120px;border-radius:60px;background:var(--accent);color:#fff;font-size:18px}
+  .mic svg{width:40px;height:40px}
+  .mic.listening{background:#C2553F;animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,85,63,.35)}50%{box-shadow:0 0 0 16px rgba(194,85,63,0)}}
+  .diag{position:fixed;left:8px;bottom:4px;font-size:11px;color:var(--soft);opacity:.7;pointer-events:none}
+  /* 手機直拿：右側按鈕移到上方一排 */
+  @media (max-width:700px) and (orientation:portrait){
+    .app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;
+      grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    .nav{flex-direction:row}
+    .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
+    .nav button svg{width:22px;height:22px}
+    .tools{gap:14px}
+    .tool{width:96px;height:84px;font-size:16px}
+    .mic{width:104px;height:104px}
+    .hint{font-size:40px}
+  }
+  @media (max-height:500px){ .tool{height:72px} .mic{width:88px;height:88px} .nav button{height:64px} .hint{font-size:34px;min-height:44px} }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><span>麥克風試用版</span><span id="progress">1 / 1</span></div>
+
+  <div class="pic">
+    <svg viewBox="0 0 200 200" aria-label="蘋果">
+      <path d="M100 58c-10-12-28-16-44-8-26 13-28 52-14 84 12 27 30 44 46 38 6-2 9-4 12-4s6 2 12 4c16 6 34-11 46-38 14-32 12-71-14-84-16-8-34-4-44 8z" fill="#D9473B" stroke="none"/>
+      <path d="M100 58c0-14 4-26 14-34" stroke="#6B4A2B" stroke-width="6" fill="none" stroke-linecap="round"/>
+      <path d="M106 44c10-14 30-16 40-10-6 14-26 20-40 10z" fill="#5E9B4C"/>
+      <ellipse cx="68" cy="92" rx="10" ry="18" fill="#fff" opacity=".35"/>
+    </svg>
+    <div class="hint" id="hint"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <div class="nav">
+    <button id="prev" disabled><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>上一題</button>
+    <button id="next" disabled><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>下一題</button>
+    <button id="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
+  </div>
+
+  <div class="tools">
+    <button class="tool" id="voiceHint"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
+    <button class="mic" id="mic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="micLabel">按我說</span></button>
+    <button class="tool" id="textHint"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
+  </div>
+</div>
+<div class="diag" id="diag"></div>
+
+<script>
+// ===== 題目（試用版只有一題）=====
+const item = { name: "蘋果", accept: ["蘋果", "苹果", "平果", "萍果"] };
+
+const $ = id => document.getElementById(id);
+const feedback = $("feedback"), hintEl = $("hint");
+let voiceStep = 0, textStep = 0;
+
+// ===== 柔和提示音 =====
+let audioCtx;
+function chime(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    [523.25, 783.99].forEach((f,i)=>{
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain(), t=audioCtx.currentTime+i*0.18;
+      o.type="sine"; o.frequency.value=f;
+      g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.18,t+0.03); g.gain.exponentialRampToValueAtTime(0.001,t+0.9);
+      o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t+1);
+    });
+  }catch(e){}
+}
+
+// ===== 語音提示（第一次：第一個字；第二次：完整名稱）=====
+function zhVoice(){
+  const vs = speechSynthesis.getVoices();
+  return vs.find(v=>v.lang==="zh-TW") || vs.find(v=>/zh[-_]?(TW|Hant)/i.test(v.lang)) || vs.find(v=>v.lang.startsWith("zh"));
+}
+function speak(text){
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-TW"; u.rate = 0.8;
+  const v = zhVoice(); if(v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+$("voiceHint").onclick = () => {
+  voiceStep = Math.min(voiceStep+1, 2);
+  speak(voiceStep===1 ? item.name[0] : item.name);
+};
+
+// ===== 文字提示（第一次：第一個字＋底線；第二次：完整名稱）=====
+$("textHint").onclick = () => {
+  textStep = Math.min(textStep+1, 2);
+  hintEl.textContent = textStep===1 ? item.name[0] + " ＿".repeat(item.name.length-1) : item.name;
+};
+
+// ===== 麥克風語音辨識 =====
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false;
+const clean = s => s.replace(/[\s，。,.!?！？、]/g,"");
+
+function setListening(on){
+  listening = on;
+  $("mic").classList.toggle("listening", on);
+  $("micLabel").textContent = on ? "聽你說…" : "按我說";
+}
+function showResult(ok, heard){
+  feedback.className = "feedback " + (ok ? "ok" : "retry");
+  feedback.innerHTML = (ok ? "答對了！" : "再試一次") + (heard ? `<span class="heard">聽到：${heard}</span>` : "");
+  if(ok){ chime(); hintEl.textContent = item.name; }
+}
+$("mic").onclick = () => {
+  if(!SR){ showResult(false); feedback.innerHTML = "這台裝置不支援語音辨識"; return; }
+  if(listening){ rec && rec.stop(); return; }
+  feedback.textContent = ""; feedback.className = "feedback";
+  speechSynthesis.cancel();
+  rec = new SR();
+  rec.lang = "zh-TW"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+  let got = false;
+  rec.onresult = e => {
+    got = true;
+    const alts = [...e.results[0]].map(a=>clean(a.transcript));
+    const ok = alts.some(t => item.accept.some(a => t.includes(a)));
+    showResult(ok, alts[0]);
+  };
+  rec.onerror = e => {
+    got = true;
+    const msg = {
+      "not-allowed":"請允許使用麥克風",
+      "service-not-allowed":"請到「設定 › 一般 › 鍵盤」開啟聽寫",
+      "no-speech":"沒有聽到聲音，請再按一次",
+      "audio-capture":"找不到麥克風",
+      "network":"網路連線有問題"
+    }[e.error] || ("發生問題：" + e.error);
+    feedback.className = "feedback retry"; feedback.textContent = msg;
+  };
+  rec.onend = () => { setListening(false); if(!got){ feedback.className="feedback retry"; feedback.textContent="沒有聽到聲音，請再按一次"; } };
+  try{ rec.start(); setListening(true); }catch(e){ feedback.textContent = "無法啟動麥克風"; }
+};
+
+$("home").onclick = () => { voiceStep = textStep = 0; hintEl.textContent = ""; feedback.textContent = ""; };
+
+// ===== 測試用資訊（正式版會拿掉）=====
+const standalone = window.navigator.standalone || matchMedia("(display-mode: standalone)").matches;
+function diag(){
+  $("diag").textContent = `語音辨識：${SR?"有":"無"}｜中文朗讀聲音：${zhVoice()?zhVoice().name:"載入中"}｜${standalone?"主畫面模式":"瀏覽器模式"}`;
+}
+diag(); speechSynthesis.onvoiceschanged = diag;
+</script>
+</body>
+</html>
