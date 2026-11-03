@@ -23,7 +23,11 @@
 <p class="note">每張圖下方是正確答案，灰色小字是也算答對的其他說法。看到不滿意的圖，請告訴我類別和編號。</p>
 <nav id="nav"></nav>
 <div id="list"></div>
+<h2>照片來源</h2>
+<p class="note">大部分照片來自 Pixabay（可免費使用，不需標示作者）。以下照片來自維基共享資源（Wikimedia Commons），依授權規定列出作者：</p>
+<ul id="credits" style="font-size:14px;line-height:1.8;color:#555"></ul>
 <script src="data/index.js"></script>
+<script src="data/credits.js"></script>
 <script>
 const list = document.getElementById("list"), nav = document.getElementById("nav");
 DATA.forEach(c => {
@@ -37,6 +41,8 @@ DATA.forEach(c => {
   };
   document.body.appendChild(s);
 });
+document.getElementById("credits").innerHTML = CREDITS.map(c =>
+  `<li>${c.name}：${c.artist || "未具名"}，${c.license}，<a href="${c.page}" target="_blank" rel="noopener">原始頁面</a></li>`).join("");
 </script>
 </body>
 </html>
