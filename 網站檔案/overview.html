@@ -27,20 +27,22 @@
 <p class="note">大部分照片來自 Pixabay（可免費使用，不需標示作者）。以下照片來自維基共享資源（Wikimedia Commons），依授權規定列出作者：</p>
 <ul id="credits" style="font-size:14px;line-height:1.8;color:#555"></ul>
 <script src="data/index.js"></script>
+<script src="data/func_index.js"></script>
 <script src="data/credits.js"></script>
 <script>
 const list = document.getElementById("list"), nav = document.getElementById("nav");
-DATA.forEach(c => {
+const ALL = [{title:"詞彙命名", cats:DATA}, {title:"功能性詞彙", cats:(typeof FUNC_DATA!=="undefined"?FUNC_DATA:[])}];
+ALL.forEach(t => { list.insertAdjacentHTML("beforeend", `<h1 style="margin-top:36px">${t.title}</h1>`); nav.insertAdjacentHTML("beforeend", `<b style="align-self:center;margin-left:8px">${t.title}：</b>`); t.cats.forEach(c => {
   nav.insertAdjacentHTML("beforeend", `<a href="#${c.id}">${c.name}</a>`);
   list.insertAdjacentHTML("beforeend", `<h2 id="${c.id}">${c.name}（${c.count} 題）</h2><div class="grid" id="g-${c.id}"></div>`);
   const s = document.createElement("script");
   s.src = `data/${c.id}.js`;
   s.onload = () => {
     document.getElementById("g-" + c.id).innerHTML = window.CAT[c.id].map((it, i) =>
-      `<figure><img src="${it.img}" loading="lazy" alt=""><figcaption>${i+1}. ${it.name}${it.accept.length?`<small>${it.accept.join("、")}</small>`:""}</figcaption></figure>`).join("");
+      `<figure><img src="${it.img}" loading="lazy" alt=""><figcaption>${i+1}. ${it.prompt ? it.prompt + "<u>" + it.answer + "</u>" : it.name}${it.accept.length?`<small>${it.accept.join("、")}</small>`:""}</figcaption></figure>`).join("");
   };
   document.body.appendChild(s);
-});
+}); });
 document.getElementById("credits").innerHTML = CREDITS.map(c =>
   `<li>${c.name}：${c.artist || "未具名"}，${c.license}，<a href="${c.page}" target="_blank" rel="noopener">原始頁面</a></li>`).join("");
 </script>

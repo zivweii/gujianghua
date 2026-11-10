@@ -24,7 +24,7 @@
   .hidden{display:none!important}
 
   /* ===== 主頁 ===== */
-  #homeView{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  #themeView,#homeView{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
   .homeTop{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 4px 20px}
   .brand{display:flex;align-items:center;gap:12px;font-size:30px;font-weight:700}
@@ -37,6 +37,16 @@
   .cat img{width:100%;aspect-ratio:4/3;object-fit:contain;border-radius:12px;background:#fff}
   .cat span{font-size:24px;font-weight:600}
   .cat small{font-size:14px;color:var(--soft)}
+  .themes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-top:8vh}
+  .theme{min-height:200px;border-radius:28px;font-size:36px;font-weight:700;color:var(--accent);border:3px solid var(--line)}
+  .theme:active{border-color:var(--accent)}
+  .back{flex-direction:row;gap:6px;padding:10px 16px 10px 10px;font-size:18px;border-radius:14px}
+  .back svg{width:24px;height:24px}
+  .catHead{display:flex;align-items:center;gap:14px}
+  .catHead h1{margin:0;font-size:28px}
+  .back,.order,.catHead h1{white-space:nowrap}
+  @media (max-width:520px){ .theme{min-height:140px;font-size:30px} .catHead h1{font-size:22px}
+    #homeView .homeTop{flex-wrap:wrap} #homeView .order{margin-left:auto} }
   @media (max-width:520px){ .grid{grid-template-columns:1fr 1fr;gap:12px} .cat span{font-size:20px} .brand{font-size:26px} }
 
   /* ===== 練習畫面 ===== */
@@ -48,6 +58,8 @@
     align-items:center;justify-content:center;min-height:0;position:relative;overflow:hidden;padding:16px}
   .pic img{flex:1;min-height:0;width:100%;object-fit:contain}
   .hint{min-height:64px;font-size:52px;font-weight:600;letter-spacing:6px;margin-top:6px;text-align:center}
+  .hint.sentence{font-size:40px;letter-spacing:2px;line-height:1.3}
+  .hint.sentence .blank{color:var(--accent)}
   .feedback{position:absolute;top:12px;right:14px;max-width:45%;background:rgba(255,255,255,.88);padding:6px 12px;border-radius:14px;text-align:right;font-size:30px;font-weight:600;min-height:0}
   .feedback:empty{display:none}
   .feedback.ok{color:var(--ok)} .feedback.retry{color:var(--retry)}
@@ -67,20 +79,32 @@
     .nav button svg{width:22px;height:22px}
     .tools{gap:14px} .tool{width:96px;height:84px;font-size:16px} .mic{width:104px;height:104px}
     .hint{font-size:40px;min-height:50px}
+    .hint.sentence{font-size:28px}
   }
   @media (max-height:500px){ .tool{height:72px} .mic{width:88px;height:88px} .nav button{height:64px}
-    .hint{font-size:32px;min-height:40px} .feedback{font-size:22px} }
+    .hint{font-size:32px;min-height:40px} .hint.sentence{font-size:26px} .feedback{font-size:22px} }
 </style>
 </head>
 <body>
 
-<!-- 主頁 -->
-<div id="homeView">
+<!-- 主頁：選主題 -->
+<div id="themeView" class="page">
   <div class="homeTop">
     <div class="brand"><img src="icon-180.png" alt="">顧講話</div>
+  </div>
+  <div class="warn hidden" id="warn">目前是「主畫面模式」，蘋果系統在這個模式下不允許使用麥克風。<br>請改用 Safari 打開：https://zivweii.github.io/gujianghua/網站檔案/</div>
+  <div class="themes" id="themes"></div>
+</div>
+
+<!-- 主題內：選類別 -->
+<div id="homeView" class="page hidden">
+  <div class="homeTop">
+    <div class="catHead">
+      <button class="back" id="backBtn"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
+      <h1 id="themeName"></h1>
+    </div>
     <button class="order" id="orderBtn">題目順序：<b id="orderLabel">固定</b></button>
   </div>
-  <div class="warn hidden" id="warn">目前是「主畫面模式」，蘋果系統在這個模式下不允許使用麥克風。<br>請改用 Safari 打開：https://zivweii.github.io/gujianghua/</div>
   <div class="grid" id="grid"></div>
 </div>
 
@@ -105,6 +129,7 @@
 </div>
 
 <script src="data/index.js"></script>
+<script src="data/func_index.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const store = {
@@ -118,13 +143,34 @@ function renderOrder(){ $("orderLabel").textContent = shuffleOn ? "打亂" : "�
 $("orderBtn").onclick = () => { shuffleOn = !shuffleOn; store.set("shuffle", shuffleOn); renderOrder(); };
 renderOrder();
 
-DATA.forEach((cat, ci) => {
+// 主題清單：之後新增主題，只要在這裡加一筆
+const THEMES = [
+  { id: "naming", name: "詞彙命名", cats: DATA },
+  { id: "func", name: "功能性詞彙", cats: (typeof FUNC_DATA !== "undefined" ? FUNC_DATA : []) },
+];
+let theme = null;
+function showPage(id){ ["themeView","homeView","practiceView"].forEach(p => $(p).classList.toggle("hidden", p !== id)); }
+THEMES.forEach(t => {
   const b = document.createElement("button");
-  b.className = "cat";
-  b.innerHTML = `<img src="${cat.cover}" alt=""><span>${cat.name}</span><small>${cat.count} 題</small>`;
-  b.onclick = () => startCategory(ci);
-  $("grid").appendChild(b);
+  b.className = "theme"; b.textContent = t.name;
+  b.onclick = () => openTheme(t);
+  $("themes").appendChild(b);
 });
+function openTheme(t){
+  theme = t;
+  $("themeName").textContent = t.name;
+  $("grid").innerHTML = "";
+  t.cats.forEach((cat, ci) => {
+    const b = document.createElement("button");
+    b.className = "cat";
+    b.innerHTML = `<img src="${cat.cover}" alt=""><span>${cat.name}</span><small>${cat.count} 題</small>`;
+    b.onclick = () => startCategory(ci);
+    $("grid").appendChild(b);
+  });
+  showPage("homeView");
+  $("homeView").scrollTop = 0;
+}
+$("backBtn").onclick = () => showPage("themeView");
 
 // ===== 練習 =====
 let cat, order, pos, voiceStep, textStep;
@@ -138,23 +184,38 @@ function loadCategory(id){
   });
 }
 async function startCategory(ci){
-  const info = DATA[ci];
+  const info = theme.cats[ci];
   try{ await loadCategory(info.id); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
   cat = { name: info.name, items: window.CAT[info.id] };
   order = cat.items.map((_, i) => i);
   if(shuffleOn) for(let i=order.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [order[i],order[j]]=[order[j],order[i]]; }
   pos = 0;
   $("catName").textContent = cat.name;
-  $("homeView").classList.add("hidden");
-  $("practiceView").classList.remove("hidden");
+  showPage("practiceView");
   show();
 }
 function item(){ return cat.items[order[pos]]; }
+// 要說出的答案：功能性詞彙是「用途」，詞彙命名是「名稱」
+function target(it){ return it.answer || it.name; }
+function renderHint(){
+  const it = item(), a = target(it), el = $("hint");
+  if(it.prompt){   // 功能性詞彙：一直顯示句子，空格填答案
+    let fill;
+    if(textStep === 0) fill = `<span class="blank">${"＿".repeat(a.length)}</span>`;
+    else if(textStep === 1) fill = `<span class="blank">${a[0]}${"＿".repeat(a.length-1)}</span>`;
+    else fill = `<span class="blank">${a}</span>`;
+    el.className = "hint sentence";
+    el.innerHTML = it.prompt + fill + "。";
+  }else{
+    el.className = "hint";
+    el.textContent = textStep === 0 ? "" : textStep === 1 ? a[0] + " ＿".repeat(a.length-1) : a;
+  }
+}
 function show(){
   stopListening(); speechSynthesis.cancel();
   voiceStep = textStep = 0;
   $("photo").src = item().img;
-  $("hint").textContent = "";
+  renderHint();
   $("feedback").textContent = ""; $("feedback").className = "feedback";
   $("progress").textContent = `${pos+1} / ${order.length}`;
   $("prev").disabled = pos === 0;
@@ -166,8 +227,7 @@ $("prev").onclick = () => { if(pos>0){ pos--; show(); } };
 $("next").onclick = () => { if(pos<order.length-1){ pos++; show(); } };
 $("home").onclick = () => {
   stopListening(); speechSynthesis.cancel();
-  $("practiceView").classList.add("hidden");
-  $("homeView").classList.remove("hidden");
+  showPage("homeView");
 };
 
 // ===== 語音提示：第一次唸第一個字，第二次唸完整名稱 =====
@@ -185,15 +245,14 @@ function speak(text){
 }
 $("voiceHint").onclick = () => {
   voiceStep = Math.min(voiceStep+1, 2);
-  const n = item().name;
+  const n = target(item());
   speak(voiceStep===1 ? n[0] : n);
 };
 
 // ===== 文字提示：第一次顯示第一個字，第二次顯示完整名稱 =====
 $("textHint").onclick = () => {
   textStep = Math.min(textStep+1, 2);
-  const n = item().name;
-  $("hint").textContent = textStep===1 ? n[0] + " ＿".repeat(n.length-1) : n;
+  renderHint();
 };
 
 // ===== 答對提示音 =====
@@ -229,7 +288,7 @@ $("mic").onclick = () => {
   if(listening){ rec && rec.stop(); return; }
   say("", "");
   speechSynthesis.cancel();
-  const it = item(), answers = [it.name, ...it.accept].map(clean);
+  const it = item(), answers = [target(it), ...it.accept].map(clean);
   rec = new SR();
   rec.lang = "zh-TW"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
   let got = false;
@@ -238,7 +297,7 @@ $("mic").onclick = () => {
     const alts = [...e.results[0]].map(a=>clean(a.transcript));
     const ok = alts.some(t => answers.some(a => t.includes(a)));
     const heard = `<span class="heard">聽到：${alts[0]||""}</span>`;
-    if(ok){ say("ok", "答對了！" + heard); chime(); $("hint").textContent = it.name; }
+    if(ok){ say("ok", "答對了！" + heard); chime(); textStep = 2; renderHint(); }
     else say("retry", "再試一次" + heard);
   };
   rec.onerror = e => {
