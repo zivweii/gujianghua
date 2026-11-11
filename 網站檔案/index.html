@@ -50,7 +50,7 @@
   @media (max-width:520px){ .grid{grid-template-columns:1fr 1fr;gap:12px} .cat span{font-size:20px} .brand{font-size:26px} }
 
   /* ===== 練習畫面 ===== */
-  #practiceView{height:100dvh;display:grid;gap:16px;
+  #practiceView,#groupView{height:100dvh;display:grid;gap:16px;
     padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
   .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
@@ -73,7 +73,7 @@
   .mic.listening{background:#C2553F;animation:pulse 1.2s infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,85,63,.35)}50%{box-shadow:0 0 0 16px rgba(194,85,63,0)}}
   @media (max-width:700px) and (orientation:portrait){
-    #practiceView{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    #practiceView,#groupView{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .nav{flex-direction:row}
     .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
     .nav button svg{width:22px;height:22px}
@@ -83,6 +83,35 @@
   }
   @media (max-height:500px){ .tool{height:72px} .mic{width:88px;height:88px} .nav button{height:64px}
     .hint{font-size:32px;min-height:40px} .hint.sentence{font-size:26px} .feedback{font-size:22px} }
+  /* ===== 分類練習 ===== */
+  .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
+  .secTitle{font-size:18px;color:var(--soft);margin:18px 6px 10px}
+  .countRow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .countBtn{height:72px;font-size:26px;font-weight:700;border:3px solid var(--line);border-radius:18px}
+  .countBtn.on{border-color:var(--accent);background:var(--accent);color:#fff}
+  .catBtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .catBtn{height:72px;font-size:22px;font-weight:600;border:3px solid var(--line);border-radius:18px}
+  .catBtn:active{border-color:var(--accent)}
+  .soon{text-align:center;color:var(--soft);font-size:22px;margin-top:12vh;line-height:1.8}
+  .gTopR{display:flex;align-items:center;gap:12px}
+  .levelBtn{flex-direction:row;padding:6px 6px;border-radius:14px;font-size:17px;gap:0}
+  .levelBtn span{padding:6px 14px;border-radius:10px;color:var(--soft);white-space:nowrap}
+  #gName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #gProgress{white-space:nowrap}
+  #groupView .top{gap:10px}
+  .levelBtn span.on{background:var(--accent);color:#fff}
+  .gPics{flex:1;min-height:0;width:100%;display:grid;gap:12px;align-content:center;justify-items:center}
+  .gPics img{width:100%;height:100%;max-height:100%;object-fit:contain;min-height:0}
+  .gPics.n2{grid-template-columns:1fr 1fr} .gPics.n3{grid-template-columns:1fr 1fr 1fr}
+  .gPics.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+  .gPics.n5{grid-template-columns:repeat(6,1fr);grid-template-rows:1fr 1fr}
+  .gPics.n5 img{grid-column:span 2} .gPics.n5 img:nth-child(4){grid-column:2/span 2}
+  #gDone{position:absolute;inset:0;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:24px}
+  #gDone h2{font-size:48px;margin:0;color:var(--accent)}
+  #gDone p{font-size:22px;color:var(--soft);margin:0}
+  #gDone .row{display:flex;gap:16px}
+  #gDone button{padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px}
+  @media (max-width:520px){ .levelBtn span{padding:6px 10px} .countBtn{font-size:20px;height:60px} .catBtn{font-size:18px;height:60px} .catBtns{grid-template-columns:1fr 1fr} #gDone h2{font-size:36px} }
 </style>
 </head>
 <body>
@@ -106,6 +135,61 @@
     <button class="order" id="orderBtn">題目順序：<b id="orderLabel">固定</b></button>
   </div>
   <div class="grid" id="grid"></div>
+</div>
+
+<!-- 分類練習：選項目 -->
+<div id="classView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" id="classBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
+    <h1>分類練習</h1></div></div>
+  <div class="themes">
+    <button class="theme" id="toGroup">同類命名</button>
+    <button class="theme" id="toOdd">找不同類</button>
+  </div>
+</div>
+
+<!-- 同類命名：選張數與類別 -->
+<div id="groupSetupView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" id="groupBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>分類練習</button>
+    <h1>同類命名</h1></div></div>
+  <div class="secTitle">一次出現幾張圖片</div>
+  <div class="countRow" id="countRow"></div>
+  <div class="secTitle">選一個類別開始練習</div>
+  <div class="catBtns" id="groupCats"></div>
+</div>
+
+<!-- 找不同類（內容準備中） -->
+<div id="oddView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" id="oddBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>分類練習</button>
+    <h1>找不同類</h1></div></div>
+  <div class="soon">這個練習還在準備中<br>敬請期待</div>
+</div>
+
+<!-- 同類命名：練習畫面 -->
+<div id="groupView" class="practice hidden">
+  <div class="top"><span id="gName"></span>
+    <div class="gTopR">
+      <button class="levelBtn" id="gLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button>
+      <span id="gProgress"></span></div></div>
+  <div class="pic">
+    <div class="gPics" id="gPics"></div>
+    <div class="hint sentence" id="gHint"></div>
+    <div class="feedback" id="gFeedback"></div>
+    <div id="gDone" class="hidden"><h2>恭喜完成！</h2><p id="gDoneText"></p>
+      <div class="row"><button id="gAgain">再練一次</button><button id="gMenu">回到選單</button></div></div>
+  </div>
+  <div class="nav">
+    <button id="gPrev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>上一題</button>
+    <button id="gNext"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>下一題</button>
+    <button id="gHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
+  </div>
+  <div class="tools">
+    <button class="tool" id="gVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
+    <button class="mic" id="gMic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="gMicLabel">按我說</span></button>
+    <button class="tool" id="gText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
+  </div>
 </div>
 
 <!-- 練習畫面 -->
@@ -147,13 +231,15 @@ renderOrder();
 const THEMES = [
   { id: "naming", name: "詞彙命名", cats: DATA },
   { id: "func", name: "功能性詞彙", cats: (typeof FUNC_DATA !== "undefined" ? FUNC_DATA : []) },
+  { id: "class", name: "分類練習", page: "classView" },
 ];
 let theme = null;
-function showPage(id){ ["themeView","homeView","practiceView"].forEach(p => $(p).classList.toggle("hidden", p !== id)); }
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView"];
+function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
   b.className = "theme"; b.textContent = t.name;
-  b.onclick = () => openTheme(t);
+  b.onclick = () => t.page ? showPage(t.page) : openTheme(t);
   $("themes").appendChild(b);
 });
 function openTheme(t){
@@ -312,6 +398,156 @@ $("mic").onclick = () => {
   };
   rec.onend = () => { setListening(false); if(!got) say("retry","沒有聽到聲音，請再按一次"); };
   try{ rec.start(); setListening(true); }catch(e){ say("retry","無法啟動麥克風"); }
+};
+</script>
+<script>
+// ===================== 分類練習：同類命名 =====================
+// 類別名稱（病人要說的答案）與其他可接受的說法
+const GROUP_WORD = {
+  verb:["動詞",["動作"]], fruit:["水果",[]], veg:["蔬菜",["青菜","菜"]], food:["食物",["吃的"]], drink:["飲料",["喝的"]],
+  snack:["點心",["零食","甜點"]], tw:["台灣小吃",["小吃"]], vehicle:["交通工具",["車子"]], furniture:["傢俱",["家具"]],
+  appliance:["家電",["電器"]], daily:["日常用品",["生活用品","用品"]], clothes:["衣物配件",["衣服","衣物","配件"]],
+  body:["身體部位",["身體"]], feeling:["身體感覺",["感覺"]], social:["社交用語",["問候語","禮貌用語"]], animal:["動物",[]],
+};
+const ROUNDS = 20;
+let gCount = store.get("gCount", 2), gLevel = store.get("gLevel", "easy");
+let gCat, gRounds, gPos, gVoiceStep, gTextStep, gSolved;
+
+$("classBack").onclick = () => showPage("themeView");
+$("toGroup").onclick = () => showPage("groupSetupView");
+$("toOdd").onclick = () => showPage("oddView");
+$("groupBack").onclick = () => showPage("classView");
+$("oddBack").onclick = () => showPage("classView");
+
+// 張數按鈕
+["兩個","三個","四個","五個"].forEach((t, i) => {
+  const b = document.createElement("button");
+  b.className = "countBtn"; b.textContent = t; b.dataset.n = i + 2;
+  b.onclick = () => { gCount = i + 2; store.set("gCount", gCount); renderCount(); };
+  $("countRow").appendChild(b);
+});
+function renderCount(){ [...$("countRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === gCount)); }
+renderCount();
+
+// 類別按鈕（詞彙命名的所有類別）
+DATA.forEach(c => {
+  const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = c.name;
+  b.onclick = () => startGroup(c);
+  $("groupCats").appendChild(b);
+});
+
+function pickRandom(n, k){
+  const a = [...Array(n).keys()];
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a.slice(0, k);
+}
+async function startGroup(c){
+  try{ await loadCategory(c.id); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  const items = window.CAT[c.id];
+  const word = GROUP_WORD[c.id] || [c.name, []];
+  gCat = { id: c.id, name: c.name, items, word: word[0], wordAccept: word[1] };
+  const k = Math.min(gCount, items.length);
+  gRounds = Array.from({length: ROUNDS}, () => pickRandom(items.length, k));
+  gPos = 0;
+  $("gName").textContent = `同類命名・${c.name}・${["","","兩","三","四","五"][k]}個`;
+  showPage("groupView");
+  gShow();
+}
+function gItems(){ return gRounds[gPos].map(i => gCat.items[i]); }
+function joinNames(list){ return list.length === 1 ? list[0] : list.slice(0,-1).join("、") + "和" + list[list.length-1]; }
+const blank = n => `<span class="blank">${"＿".repeat(Math.max(2, n))}</span>`;
+const part = (w, step) => `<span class="blank">${step === 0 ? "＿".repeat(Math.max(2, w.length)) : step === 1 ? w[0] + "＿".repeat(w.length-1) : w}</span>`;
+
+// 句子：簡單＝「蘋果和香蕉為＿＿」；困難＝「＿＿和＿＿為＿＿＿」
+// 困難的逐步提示：1 每格第一個字 → 2 物品名稱全部出現 → 3 類別也完整出現
+function gRender(){
+  const names = gItems().map(it => it.name), w = gCat.word;
+  let html;
+  if(gSolved){
+    html = `${joinNames(names)}為<span class="blank">${w}</span>`;
+  }else if(gLevel === "easy"){
+    html = `${joinNames(names)}為${part(w, gTextStep)}`;
+  }else{
+    const ns = gTextStep === 0 ? 0 : gTextStep === 1 ? 1 : 2;
+    const ws = gTextStep <= 1 ? gTextStep : gTextStep === 2 ? 1 : 2;
+    html = `${joinNames(names.map(n => part(n, ns)))}為${part(w, ws)}`;
+  }
+  $("gHint").innerHTML = html + "。";
+  $("gLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === gLevel));
+}
+function gSay(cls, html){ $("gFeedback").className = "feedback " + cls; $("gFeedback").innerHTML = html; }
+function gShow(){
+  gStopListening(); speechSynthesis.cancel();
+  gVoiceStep = gTextStep = 0; gSolved = false;
+  $("gDone").classList.add("hidden");
+  const its = gItems();
+  $("gPics").className = "gPics n" + its.length;
+  $("gPics").innerHTML = its.map(it => `<img src="${it.img}" alt="">`).join("");
+  gSay("", "");
+  $("gProgress").textContent = `${gPos+1} / ${ROUNDS}`;
+  $("gPrev").disabled = gPos === 0;
+  $("gNext").disabled = false;
+  gRender();
+}
+function gFinish(){
+  gStopListening(); speechSynthesis.cancel();
+  $("gDoneText").textContent = `${gCat.name}・${ROUNDS} 題都練習完了`;
+  $("gDone").classList.remove("hidden");
+  $("gNext").disabled = true;
+  chime();
+}
+$("gPrev").onclick = () => { if(gPos > 0){ gPos--; gShow(); } };
+$("gNext").onclick = () => { if(gPos < ROUNDS-1){ gPos++; gShow(); } else gFinish(); };
+$("gHome").onclick = () => { gStopListening(); speechSynthesis.cancel(); showPage("groupSetupView"); };
+$("gAgain").onclick = () => startGroup(DATA.find(c => c.id === gCat.id));
+$("gMenu").onclick = () => showPage("groupSetupView");
+$("gLevel").onclick = () => { gLevel = gLevel === "easy" ? "hard" : "easy"; store.set("gLevel", gLevel); gVoiceStep = gTextStep = 0; gSolved = false; gSay("",""); gRender(); };
+
+// 提示：簡單 2 段，困難 3 段
+const maxStep = () => gLevel === "easy" ? 2 : 3;
+$("gText").onclick = () => { gTextStep = Math.min(gTextStep+1, maxStep()); gRender(); };
+$("gVoice").onclick = () => {
+  gVoiceStep = Math.min(gVoiceStep+1, maxStep());
+  const names = gItems().map(it => it.name), w = gCat.word;
+  let t;
+  if(gLevel === "easy") t = gVoiceStep === 1 ? w[0] : w;
+  else if(gVoiceStep === 1) t = names.map(n => n[0]).join("，") + "，" + w[0];
+  else if(gVoiceStep === 2) t = joinNames(names) + "為" + w[0];
+  else t = joinNames(names) + "為" + w;
+  speak(t);
+};
+
+// 麥克風：簡單＝說出類別；困難＝整句（每個物品名稱＋類別都要說到）
+let gRec = null, gListening = false;
+function gSetListening(on){ gListening = on; $("gMic").classList.toggle("listening", on); $("gMicLabel").textContent = on ? "聽你說…" : "按我說"; }
+function gStopListening(){ if(gRec){ gRec.onresult = gRec.onerror = gRec.onend = null; try{ gRec.abort(); }catch(e){} gRec = null; } gSetListening(false); }
+$("gMic").onclick = () => {
+  if(!SR){ gSay("retry","這台裝置不支援語音辨識"); return; }
+  if(STANDALONE){ gSay("retry","主畫面模式無法使用麥克風<span class=\"heard\">請改用 Safari 打開</span>"); return; }
+  if(gListening){ gRec && gRec.stop(); return; }
+  gSay("",""); speechSynthesis.cancel();
+  const wordAns = [gCat.word, gCat.word + "類", ...gCat.wordAccept].map(clean);
+  const itemAns = gItems().map(it => [it.name, ...it.accept].map(clean));
+  gRec = new SR();
+  gRec.lang = "zh-TW"; gRec.interimResults = false; gRec.maxAlternatives = 5; gRec.continuous = false;
+  let got = false;
+  gRec.onresult = e => {
+    got = true;
+    const alts = [...e.results[0]].map(a => clean(a.transcript));
+    const has = (t, list) => list.some(a => t.includes(a));
+    const ok = alts.some(t => has(t, wordAns) && (gLevel === "easy" || itemAns.every(l => has(t, l))));
+    const heard = `<span class="heard">聽到：${alts[0]||""}</span>`;
+    if(ok){ gSay("ok", "答對了！" + heard); chime(); gSolved = true; gRender(); }
+    else gSay("retry", "再試一次" + heard);
+  };
+  gRec.onerror = e => {
+    got = true;
+    gSay("retry", {"not-allowed":"請允許使用麥克風","service-not-allowed":"請到「設定 › 一般 › 鍵盤」開啟聽寫",
+      "no-speech":"沒有聽到聲音，請再按一次","audio-capture":"找不到麥克風","network":"網路連線有問題"}[e.error] || "發生問題，請再按一次");
+  };
+  gRec.onend = () => { gSetListening(false); if(!got) gSay("retry","沒有聽到聲音，請再按一次"); };
+  try{ gRec.start(); gSetListening(true); }catch(e){ gSay("retry","無法啟動麥克風"); }
 };
 </script>
 </body>
