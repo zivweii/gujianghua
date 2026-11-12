@@ -504,7 +504,10 @@ function pickRandom(n, k){
   return a.slice(0, k);
 }
 async function startGroup(c){
+  const btn = [...$("groupCats").children].find(b => b.textContent === c.name);
+  if(btn && !(window.CAT && window.CAT[c.id])){ btn.textContent = "載入中…"; btn.disabled = true; }
   try{ await loadCategory(c.id); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  finally{ if(btn){ btn.textContent = c.name; btn.disabled = false; } }
   const items = window.CAT[c.id];
   const word = GROUP_WORD[c.id] || [c.name, []];
   gMode = "group";
@@ -518,8 +521,14 @@ async function startGroup(c){
 }
 const catWord = id => { const d = DATA.find(x => x.id === id), w = GROUP_WORD[id] || [d.name, []]; return { id, name: d.name, word: w[0], accept: w[1] }; };
 async function startOdd(c){
-  const others = DATA.filter(d => d.id !== c.id && !(ODD_AVOID[c.id] || []).includes(d.id));
-  try{ await Promise.all([c, ...others].map(d => loadCategory(d.id))); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  // 只隨機挑 4 個其他類別來載入，避免一次下載太多照片
+  const pool = DATA.filter(d => d.id !== c.id && !(ODD_AVOID[c.id] || []).includes(d.id));
+  const others = pickRandom(pool.length, Math.min(4, pool.length)).map(i => pool[i]);
+  const btn = [...$("oddCats").children].find(b => b.textContent === c.name || b.dataset.name === c.name);
+  if(btn){ btn.dataset.name = c.name; btn.textContent = "載入中…"; btn.disabled = true; }
+  try{ await Promise.all([c, ...others].map(d => loadCategory(d.id))); }
+  catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  finally{ if(btn){ btn.textContent = c.name; btn.disabled = false; } }
   gMode = "odd";
   const items = window.CAT[c.id], w = catWord(c.id);
   gCat = { id: c.id, name: c.name, items, word: w.word, wordAccept: w.accept };
