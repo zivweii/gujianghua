@@ -196,7 +196,7 @@
 
 <!-- 練習畫面 -->
 <div id="practiceView" class="hidden">
-  <div class="top"><span id="catName"></span><span id="progress"></span></div>
+  <div class="top"><span id="catName"></span><div class="gTopR"><button class="levelBtn hidden" id="fLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button><span id="progress"></span></div></div>
   <div class="pic">
     <img id="photo" alt="">
     <div class="hint" id="hint"></div>
@@ -286,9 +286,20 @@ async function startCategory(ci){
 function item(){ return cat.items[order[pos]]; }
 // 要說出的答案：功能性詞彙是「用途」，詞彙命名是「名稱」
 function target(it){ return it.answer || it.name; }
+// 功能性詞彙的簡單／困難
+let fLevel = store.get("fLevel", "easy"), filled = new Set(), voiceIdx = 0;
+const isHard = it => fLevel === "hard" && it.prompt && it.hard;
 function renderHint(){
   const it = item(), a = target(it), el = $("hint");
-  if(it.prompt){   // 功能性詞彙：一直顯示句子，空格填答案
+  $("fLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === fLevel));
+  if(isHard(it)){   // 困難：好幾個空格，說對一個填一個
+    const blanks = it.hard.answers.map((w, i) => {
+      const t = (filled.has(i) || textStep >= 2) ? w : textStep === 1 ? w[0] + "＿".repeat(w.length-1) : "＿".repeat(Math.max(2, w.length));
+      return `<span class="blank">${t}</span>`;
+    });
+    el.className = "hint sentence";
+    el.innerHTML = it.hard.prompt + blanks.join("、") + "。";
+  }else if(it.prompt){   // 功能性詞彙：一直顯示句子，空格填答案
     let fill;
     if(textStep === 0) fill = `<span class="blank">${"＿".repeat(a.length)}</span>`;
     else if(textStep === 1) fill = `<span class="blank">${a[0]}${"＿".repeat(a.length-1)}</span>`;
@@ -302,7 +313,8 @@ function renderHint(){
 }
 function show(){
   stopListening(); speechSynthesis.cancel();
-  voiceStep = textStep = 0;
+  voiceStep = textStep = 0; filled = new Set(); voiceIdx = 0;
+  $("fLevel").classList.toggle("hidden", !item().hard);
   $("photo").src = item().img;
   renderHint();
   $("readAll").classList.toggle("hidden", !item().prompt);
@@ -334,8 +346,18 @@ function speak(text){
   speechSynthesis.speak(u);
 }
 // 整句朗讀（功能性詞彙）：唸出完整句子讓病人仿說
-$("readAll").onclick = () => { const it = item(); speak(it.prompt + target(it)); };
+$("readAll").onclick = () => { const it = item(); speak(isHard(it) ? it.hard.prompt + it.hard.answers.join("，") : it.prompt + target(it)); };
+$("fLevel").onclick = () => {
+  fLevel = fLevel === "easy" ? "hard" : "easy"; store.set("fLevel", fLevel);
+  voiceStep = textStep = 0; filled = new Set(); voiceIdx = 0; say("", ""); renderHint();
+};
 $("voiceHint").onclick = () => {
+  const it = item();
+  if(isHard(it)){   // 困難：按一次唸第一個詞彙，再按唸第二個，以此類推
+    const list = it.hard.answers;
+    speak(list[voiceIdx % list.length]); voiceIdx++;
+    return;
+  }
   voiceStep = Math.min(voiceStep+1, 2);
   const n = target(item());
   speak(voiceStep===1 ? n[0] : n);
@@ -387,8 +409,17 @@ $("mic").onclick = () => {
   rec.onresult = e => {
     got = true;
     const alts = [...e.results[0]].map(a=>clean(a.transcript));
-    const ok = alts.some(t => answers.some(a => t.includes(a)));
     const heard = `<span class="heard">聽到：${alts[0]||""}</span>`;
+    if(isHard(it)){
+      const list = it.hard.answers.map(clean), before = filled.size;
+      list.forEach((w, i) => { if(alts.some(t => t.includes(w))) filled.add(i); });
+      renderHint();
+      if(filled.size === list.length){ say("ok", "全部答對了！" + heard); chime(); }
+      else if(filled.size > before) say("ok", `很好！還有 ${list.length - filled.size} 個` + heard);
+      else say("retry", "再試一次" + heard);
+      return;
+    }
+    const ok = alts.some(t => answers.some(a => t.includes(a)));
     if(ok){ say("ok", "答對了！" + heard); chime(); textStep = 2; renderHint(); }
     else say("retry", "再試一次" + heard);
   };

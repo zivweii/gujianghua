@@ -39,7 +39,7 @@ ALL.forEach(t => { list.insertAdjacentHTML("beforeend", `<h1 style="margin-top:3
   s.src = `data/${c.id}.js`;
   s.onload = () => {
     document.getElementById("g-" + c.id).innerHTML = window.CAT[c.id].map((it, i) =>
-      `<figure><img src="${it.img}" loading="lazy" alt=""><figcaption>${i+1}. ${it.prompt ? it.prompt + "<u>" + it.answer + "</u>" : it.name}${it.accept.length?`<small>${it.accept.join("、")}</small>`:""}</figcaption></figure>`).join("");
+      `<figure><img src="${it.img}" loading="lazy" alt=""><figcaption>${i+1}. ${it.prompt ? it.prompt + "<u>" + it.answer + "</u>" : it.name}${it.accept.length?`<small>${it.accept.join("、")}</small>`:""}${it.hard?`<small style="color:#3E7C6B">困難：${it.hard.prompt}${it.hard.answers.join("、")}</small>`:""}</figcaption></figure>`).join("");
   };
   document.body.appendChild(s);
 }); });
