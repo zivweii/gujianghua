@@ -73,11 +73,11 @@
   .mic.listening{background:#C2553F;animation:pulse 1.2s infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,85,63,.35)}50%{box-shadow:0 0 0 16px rgba(194,85,63,0)}}
   @media (max-width:700px) and (orientation:portrait){
-    #practiceView,#groupView{grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    #practiceView,#groupView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .nav{flex-direction:row}
     .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
     .nav button svg{width:22px;height:22px}
-    .tools{gap:14px} .tool{width:96px;height:84px;font-size:16px} .mic{width:104px;height:104px}
+    .tools{gap:8px;min-width:0;width:100%} .tool{flex:1 1 0;min-width:0;max-width:96px;height:80px;font-size:14px} .mic{flex:none;width:92px;height:92px}
     .hint{font-size:40px;min-height:50px}
     .hint.sentence{font-size:28px}
   }
@@ -208,6 +208,7 @@
     <button id="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
   </div>
   <div class="tools">
+    <button class="tool hidden" id="readAll"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 10h10M4 14h6"/><path d="M15 13l3-2v8l-3-2h-2v-4z"/><path d="M20.5 12.5a3 3 0 010 3"/></svg>整句朗讀</button>
     <button class="tool" id="voiceHint"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
     <button class="mic" id="mic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="micLabel">按我說</span></button>
     <button class="tool" id="textHint"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
@@ -304,6 +305,7 @@ function show(){
   voiceStep = textStep = 0;
   $("photo").src = item().img;
   renderHint();
+  $("readAll").classList.toggle("hidden", !item().prompt);
   $("feedback").textContent = ""; $("feedback").className = "feedback";
   $("progress").textContent = `${pos+1} / ${order.length}`;
   $("prev").disabled = pos === 0;
@@ -331,6 +333,8 @@ function speak(text){
   const v = zhVoice(); if(v) u.voice = v;
   speechSynthesis.speak(u);
 }
+// 整句朗讀（功能性詞彙）：唸出完整句子讓病人仿說
+$("readAll").onclick = () => { const it = item(); speak(it.prompt + target(it)); };
 $("voiceHint").onclick = () => {
   voiceStep = Math.min(voiceStep+1, 2);
   const n = target(item());
