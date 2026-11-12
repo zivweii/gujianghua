@@ -484,10 +484,14 @@ renderCount();
 function renderOddCount(){ [...$("oddCountRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === oddCount)); }
 renderOddCount();
 $("oddCountRow").style.gridTemplateColumns = "repeat(3,1fr)";
+{ const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = "全部隨機"; b.style.borderColor = "var(--accent)"; b.style.color = "var(--accent)";
+  b.onclick = () => startOdd(null, b);
+  $("oddCats").appendChild(b); }
 DATA.forEach(c => {
   const b = document.createElement("button");
   b.className = "catBtn"; b.textContent = c.name;
-  b.onclick = () => startOdd(c);
+  b.onclick = () => startOdd(c, b);
   $("oddCats").appendChild(b);
 });
 // 類別按鈕（詞彙命名的所有類別）
@@ -520,35 +524,46 @@ async function startGroup(c){
   gShow();
 }
 const catWord = id => { const d = DATA.find(x => x.id === id), w = GROUP_WORD[id] || [d.name, []]; return { id, name: d.name, word: w[0], accept: w[1] }; };
-async function startOdd(c){
-  // 只隨機挑 4 個其他類別來載入，避免一次下載太多照片
-  const pool = DATA.filter(d => d.id !== c.id && !(ODD_AVOID[c.id] || []).includes(d.id));
-  const others = pickRandom(pool.length, Math.min(4, pool.length)).map(i => pool[i]);
-  const btn = [...$("oddCats").children].find(b => b.textContent === c.name || b.dataset.name === c.name);
-  if(btn){ btn.dataset.name = c.name; btn.textContent = "載入中…"; btn.disabled = true; }
-  try{ await Promise.all([c, ...others].map(d => loadCategory(d.id))); }
-  catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
-  finally{ if(btn){ btn.textContent = c.name; btn.disabled = false; } }
-  gMode = "odd";
-  const items = window.CAT[c.id], w = catWord(c.id);
-  gCat = { id: c.id, name: c.name, items, word: w.word, wordAccept: w.accept };
-  const k = Math.min(oddCount - 1, items.length);
-  gRounds = Array.from({length: ROUNDS}, () => {
-    const oc = others[Math.floor(Math.random() * others.length)], oItems = window.CAT[oc.id];
-    const odd = oItems[Math.floor(Math.random() * oItems.length)];
-    const same = pickRandom(items.length, k).map(i => items[i]);
-    const pics = [...same]; pics.splice(Math.floor(Math.random() * (k + 1)), 0, odd);   // 不同類的圖片隨機放
-    return { same, odd, oddCat: catWord(oc.id), pics };
+// 找不同類用的小照片庫（每類 10 張小圖，一個檔案），只下載一次
+function loadPool(){
+  return new Promise((ok, fail) => {
+    if(window.ODD_POOL) return ok();
+    const sc = document.createElement("script");
+    sc.src = "data/odd_pool.js"; sc.onload = ok; sc.onerror = fail;
+    document.head.appendChild(sc);
   });
+}
+// c＝選的類別；c 為 null 代表「全部隨機」
+async function startOdd(c, btn){
+  if(btn){ btn.dataset.name = btn.dataset.name || btn.textContent; btn.textContent = "載入中…"; btn.disabled = true; }
+  try{ await Promise.all([loadPool(), ...(c ? [loadCategory(c.id)] : [])]); }
+  catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
+  gMode = "odd";
+  const P = window.ODD_POOL, ids = Object.keys(P);
+  const k = oddCount - 1;
+  const makeRound = sameId => {
+    const pool = ids.filter(d => d !== sameId && !(ODD_AVOID[sameId] || []).includes(d));
+    const oc = pool[Math.floor(Math.random() * pool.length)];
+    const odd = P[oc][Math.floor(Math.random() * P[oc].length)];
+    const src = (c && window.CAT && window.CAT[sameId]) ? window.CAT[sameId] : P[sameId];
+    const same = pickRandom(src.length, Math.min(k, src.length)).map(i => src[i]);
+    const pics = [...same]; pics.splice(Math.floor(Math.random() * (same.length + 1)), 0, odd);
+    const w = catWord(sameId);
+    return { same, odd, oddCat: catWord(oc), sameCat: w, pics };
+  };
+  gCat = c ? (() => { const w = catWord(c.id); return { id: c.id, name: c.name, word: w.word, wordAccept: w.accept }; })()
+           : { id: null, name: "全部隨機", word: "", wordAccept: [] };
+  gRounds = Array.from({length: ROUNDS}, () => makeRound(c ? c.id : ids[Math.floor(Math.random() * ids.length)]));
   gPos = 0;
-  $("gName").textContent = `找不同類・${c.name}・${["","","","三","四","五"][k+1]}個`;
+  $("gName").textContent = `找不同類・${gCat.name}・${["","","","三","四","五"][oddCount]}個`;
   showPage("groupView");
   gShow();
 }
 function gItems(){ return gMode === "odd" ? gRounds[gPos].same : gRounds[gPos].map(i => gCat.items[i]); }
 function gPicsNow(){ return gMode === "odd" ? gRounds[gPos].pics : gItems(); }
 // 找不同類的兩個空格：0＝同類的類別，1＝不同類那張的類別
-function oddWords(){ const r = gRounds[gPos]; return [{ word: gCat.word, accept: gCat.wordAccept }, { word: r.oddCat.word, accept: r.oddCat.accept }]; }
+function oddWords(){ const r = gRounds[gPos]; return [{ word: r.sameCat.word, accept: r.sameCat.accept }, { word: r.oddCat.word, accept: r.oddCat.accept }]; }
 function oddSentence(fill){ const r = gRounds[gPos]; return `${joinNames(r.same.map(it => it.name))}為${fill[0]}，${r.odd.name}為${fill[1]}`; }
 function joinNames(list){ return list.length === 1 ? list[0] : list.slice(0,-1).join("、") + "和" + list[list.length-1]; }
 const blank = n => `<span class="blank">${"＿".repeat(Math.max(2, n))}</span>`;
@@ -602,7 +617,7 @@ $("gPrev").onclick = () => { if(gPos > 0){ gPos--; gShow(); } };
 $("gNext").onclick = () => { if(gPos < ROUNDS-1){ gPos++; gShow(); } else gFinish(); };
 const gSetup = () => gMode === "odd" ? "oddView" : "groupSetupView";
 $("gHome").onclick = () => { gStopListening(); speechSynthesis.cancel(); showPage(gSetup()); };
-$("gAgain").onclick = () => { const c = DATA.find(c => c.id === gCat.id); gMode === "odd" ? startOdd(c) : startGroup(c); };
+$("gAgain").onclick = () => { const c = DATA.find(c => c.id === gCat.id) || null; gMode === "odd" ? startOdd(c) : startGroup(c); };
 $("gMenu").onclick = () => showPage(gSetup());
 $("gLevel").onclick = () => { gLevel = gLevel === "easy" ? "hard" : "easy"; store.set("gLevel", gLevel); gVoiceStep = gTextStep = 0; gSolved = false; gVoiceIdx = 0; gSay("",""); gRender(); };
 
