@@ -219,8 +219,9 @@
   </div>
 </div>
 
-<script src="data/index.js"></script>
-<script src="data/func_index.js"></script>
+<script>const DATA_V = "abd526da";</script>
+<script src="data/index.js?v=abd526da"></script>
+<script src="data/func_index.js?v=abd526da"></script>
 <script>
 const $ = id => document.getElementById(id);
 const store = {
@@ -272,7 +273,7 @@ function loadCategory(id){
   return new Promise((ok, fail) => {
     if(window.CAT && window.CAT[id]) return ok();
     const s = document.createElement("script");
-    s.src = `data/${id}.js`; s.onload = ok; s.onerror = fail;
+    s.src = `data/${id}.js?v=${DATA_V}`; s.onload = ok; s.onerror = fail;
     document.head.appendChild(s);
   });
 }
@@ -529,7 +530,7 @@ function loadPool(){
   return new Promise((ok, fail) => {
     if(window.ODD_POOL) return ok();
     const sc = document.createElement("script");
-    sc.src = "data/odd_pool.js"; sc.onload = ok; sc.onerror = fail;
+    sc.src = `data/odd_pool.js?v=${DATA_V}`; sc.onload = ok; sc.onerror = fail;
     document.head.appendChild(sc);
   });
 }
@@ -679,6 +680,18 @@ $("gMic").onclick = () => {
   gRec.onend = () => { gSetListening(false); if(!got) gSay("retry","沒有聽到聲音，請再按一次"); };
   try{ gRec.start(); gSetListening(true); }catch(e){ gSay("retry","無法啟動麥克風"); }
 };
+</script>
+<script>
+// 把照片存在 iPad 上：第一次下載後，之後打開就很快，沒網路也能用
+if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")){
+  navigator.serviceWorker.register("sw.js").then(() => {
+    // 開啟 8 秒後，在背景一個一個把所有照片檔先存起來（不影響練習）
+    setTimeout(async () => {
+      const ids = [...DATA.map(c => c.id), ...(typeof FUNC_DATA !== "undefined" ? FUNC_DATA.map(c => c.id) : []), "odd_pool"];
+      for(const id of ids){ try{ await fetch(`data/${id}.js?v=${DATA_V}`); }catch(e){} }
+    }, 8000);
+  }).catch(() => {});
+}
 </script>
 </body>
 </html>
