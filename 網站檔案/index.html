@@ -166,7 +166,10 @@
   <div class="homeTop"><div class="catHead">
     <button class="back" id="oddBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>分類練習</button>
     <h1>找不同類</h1></div></div>
-  <div class="soon">這個練習還在準備中<br>敬請期待</div>
+  <div class="secTitle">一次出現幾張圖片</div>
+  <div class="countRow" id="oddCountRow"></div>
+  <div class="secTitle">選一個類別開始練習</div>
+  <div class="catBtns" id="oddCats"></div>
 </div>
 
 <!-- 同類命名：練習畫面 -->
@@ -188,6 +191,7 @@
     <button id="gHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
   </div>
   <div class="tools">
+    <button class="tool" id="gReadAll"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 10h10M4 14h6"/><path d="M15 13l3-2v8l-3-2h-2v-4z"/><path d="M20.5 12.5a3 3 0 010 3"/></svg>整句朗讀</button>
     <button class="tool" id="gVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
     <button class="mic" id="gMic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="gMicLabel">按我說</span></button>
     <button class="tool" id="gText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
@@ -419,7 +423,8 @@ $("mic").onclick = () => {
       else say("retry", "再試一次" + heard);
       return;
     }
-    const ok = alts.some(t => answers.some(a => t.includes(a)));
+    const rej = (it.reject || []).map(clean);
+    const ok = alts.some(t => answers.some(a => t.includes(a)) && !rej.some(r => t.includes(r)));
     if(ok){ say("ok", "答對了！" + heard); chime(); textStep = 2; renderHint(); }
     else say("retry", "再試一次" + heard);
   };
@@ -449,6 +454,10 @@ const GROUP_WORD = {
 const ROUNDS = 20;
 let gCount = store.get("gCount", 2), gLevel = store.get("gLevel", "easy");
 let gCat, gRounds, gPos, gVoiceStep, gTextStep, gSolved;
+let gMode = "group";            // "group"＝同類命名，"odd"＝找不同類
+let oddCount = store.get("oddCount", 3), oddFilled = new Set();
+// 找不同類：這些類別彼此太像，不拿來當「不同類」
+const ODD_AVOID = { food:["snack","tw"], snack:["food","tw"], tw:["food","snack"], body:["feeling"], feeling:["body","verb","social"], verb:["feeling","social"], social:["verb","feeling"], appliance:["furniture"], furniture:["appliance"] };
 
 $("classBack").onclick = () => showPage("themeView");
 $("toGroup").onclick = () => showPage("groupSetupView");
@@ -466,6 +475,21 @@ $("oddBack").onclick = () => showPage("classView");
 function renderCount(){ [...$("countRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === gCount)); }
 renderCount();
 
+["三個","四個","五個"].forEach((t, i) => {
+  const b = document.createElement("button");
+  b.className = "countBtn"; b.textContent = t; b.dataset.n = i + 3;
+  b.onclick = () => { oddCount = i + 3; store.set("oddCount", oddCount); renderOddCount(); };
+  $("oddCountRow").appendChild(b);
+});
+function renderOddCount(){ [...$("oddCountRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === oddCount)); }
+renderOddCount();
+$("oddCountRow").style.gridTemplateColumns = "repeat(3,1fr)";
+DATA.forEach(c => {
+  const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = c.name;
+  b.onclick = () => startOdd(c);
+  $("oddCats").appendChild(b);
+});
 // 類別按鈕（詞彙命名的所有類別）
 DATA.forEach(c => {
   const b = document.createElement("button");
@@ -483,6 +507,7 @@ async function startGroup(c){
   try{ await loadCategory(c.id); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
   const items = window.CAT[c.id];
   const word = GROUP_WORD[c.id] || [c.name, []];
+  gMode = "group";
   gCat = { id: c.id, name: c.name, items, word: word[0], wordAccept: word[1] };
   const k = Math.min(gCount, items.length);
   gRounds = Array.from({length: ROUNDS}, () => pickRandom(items.length, k));
@@ -491,7 +516,31 @@ async function startGroup(c){
   showPage("groupView");
   gShow();
 }
-function gItems(){ return gRounds[gPos].map(i => gCat.items[i]); }
+const catWord = id => { const d = DATA.find(x => x.id === id), w = GROUP_WORD[id] || [d.name, []]; return { id, name: d.name, word: w[0], accept: w[1] }; };
+async function startOdd(c){
+  const others = DATA.filter(d => d.id !== c.id && !(ODD_AVOID[c.id] || []).includes(d.id));
+  try{ await Promise.all([c, ...others].map(d => loadCategory(d.id))); }catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  gMode = "odd";
+  const items = window.CAT[c.id], w = catWord(c.id);
+  gCat = { id: c.id, name: c.name, items, word: w.word, wordAccept: w.accept };
+  const k = Math.min(oddCount - 1, items.length);
+  gRounds = Array.from({length: ROUNDS}, () => {
+    const oc = others[Math.floor(Math.random() * others.length)], oItems = window.CAT[oc.id];
+    const odd = oItems[Math.floor(Math.random() * oItems.length)];
+    const same = pickRandom(items.length, k).map(i => items[i]);
+    const pics = [...same]; pics.splice(Math.floor(Math.random() * (k + 1)), 0, odd);   // 不同類的圖片隨機放
+    return { same, odd, oddCat: catWord(oc.id), pics };
+  });
+  gPos = 0;
+  $("gName").textContent = `找不同類・${c.name}・${["","","","三","四","五"][k+1]}個`;
+  showPage("groupView");
+  gShow();
+}
+function gItems(){ return gMode === "odd" ? gRounds[gPos].same : gRounds[gPos].map(i => gCat.items[i]); }
+function gPicsNow(){ return gMode === "odd" ? gRounds[gPos].pics : gItems(); }
+// 找不同類的兩個空格：0＝同類的類別，1＝不同類那張的類別
+function oddWords(){ const r = gRounds[gPos]; return [{ word: gCat.word, accept: gCat.wordAccept }, { word: r.oddCat.word, accept: r.oddCat.accept }]; }
+function oddSentence(fill){ const r = gRounds[gPos]; return `${joinNames(r.same.map(it => it.name))}為${fill[0]}，${r.odd.name}為${fill[1]}`; }
 function joinNames(list){ return list.length === 1 ? list[0] : list.slice(0,-1).join("、") + "和" + list[list.length-1]; }
 const blank = n => `<span class="blank">${"＿".repeat(Math.max(2, n))}</span>`;
 const part = (w, step) => `<span class="blank">${step === 0 ? "＿".repeat(Math.max(2, w.length)) : step === 1 ? w[0] + "＿".repeat(w.length-1) : w}</span>`;
@@ -501,6 +550,12 @@ const part = (w, step) => `<span class="blank">${step === 0 ? "＿".repeat(Math.
 function gRender(){
   const names = gItems().map(it => it.name), w = gCat.word;
   let html;
+  $("gLevel").classList.toggle("hidden", gMode === "odd");
+  if(gMode === "odd"){
+    const f = oddWords().map((o, i) => (oddFilled.has(i) || gTextStep >= 2) ? `<span class="blank">${o.word}</span>` : part(o.word, gTextStep));
+    $("gHint").innerHTML = oddSentence(f) + "。";
+    return;
+  }
   if(gSolved){
     html = `${joinNames(names)}為<span class="blank">${w}</span>`;
   }else if(gLevel === "easy"){
@@ -516,9 +571,9 @@ function gRender(){
 function gSay(cls, html){ $("gFeedback").className = "feedback " + cls; $("gFeedback").innerHTML = html; }
 function gShow(){
   gStopListening(); speechSynthesis.cancel();
-  gVoiceStep = gTextStep = 0; gSolved = false;
+  gVoiceStep = gTextStep = 0; gSolved = false; gVoiceIdx = 0; oddFilled = new Set();
   $("gDone").classList.add("hidden");
-  const its = gItems();
+  const its = gPicsNow();
   $("gPics").className = "gPics n" + its.length;
   $("gPics").innerHTML = its.map(it => `<div class="cell"><img src="${it.img}" alt=""></div>`).join("");
   gSay("", "");
@@ -536,24 +591,29 @@ function gFinish(){
 }
 $("gPrev").onclick = () => { if(gPos > 0){ gPos--; gShow(); } };
 $("gNext").onclick = () => { if(gPos < ROUNDS-1){ gPos++; gShow(); } else gFinish(); };
-$("gHome").onclick = () => { gStopListening(); speechSynthesis.cancel(); showPage("groupSetupView"); };
-$("gAgain").onclick = () => startGroup(DATA.find(c => c.id === gCat.id));
-$("gMenu").onclick = () => showPage("groupSetupView");
-$("gLevel").onclick = () => { gLevel = gLevel === "easy" ? "hard" : "easy"; store.set("gLevel", gLevel); gVoiceStep = gTextStep = 0; gSolved = false; gSay("",""); gRender(); };
+const gSetup = () => gMode === "odd" ? "oddView" : "groupSetupView";
+$("gHome").onclick = () => { gStopListening(); speechSynthesis.cancel(); showPage(gSetup()); };
+$("gAgain").onclick = () => { const c = DATA.find(c => c.id === gCat.id); gMode === "odd" ? startOdd(c) : startGroup(c); };
+$("gMenu").onclick = () => showPage(gSetup());
+$("gLevel").onclick = () => { gLevel = gLevel === "easy" ? "hard" : "easy"; store.set("gLevel", gLevel); gVoiceStep = gTextStep = 0; gSolved = false; gVoiceIdx = 0; gSay("",""); gRender(); };
 
 // 提示：簡單 2 段，困難 3 段
-const maxStep = () => gLevel === "easy" ? 2 : 3;
+const maxStep = () => (gMode === "odd" || gLevel === "easy") ? 2 : 3;
 $("gText").onclick = () => { gTextStep = Math.min(gTextStep+1, maxStep()); gRender(); };
+// 語音提示：簡單＝類別第一字→完整類別；困難＝依序唸每個詞彙（物品名稱…最後是類別），唸完重新開始
+let gVoiceIdx = 0;
 $("gVoice").onclick = () => {
-  gVoiceStep = Math.min(gVoiceStep+1, maxStep());
+  if(gMode === "odd"){   // 找不同類：按一次唸第一個詞彙，再按唸第二個，以此類推（循環）
+    const list = oddWords().map(o => o.word);
+    speak(list[gVoiceIdx % list.length]); gVoiceIdx++; return;
+  }
   const names = gItems().map(it => it.name), w = gCat.word;
-  let t;
-  if(gLevel === "easy") t = gVoiceStep === 1 ? w[0] : w;
-  else if(gVoiceStep === 1) t = names.map(n => n[0]).join("，") + "，" + w[0];
-  else if(gVoiceStep === 2) t = joinNames(names) + "為" + w[0];
-  else t = joinNames(names) + "為" + w;
-  speak(t);
+  if(gLevel === "easy"){ gVoiceStep = Math.min(gVoiceStep+1, 2); speak(gVoiceStep === 1 ? w[0] : w); return; }
+  const list = [...names, w];
+  speak(list[gVoiceIdx % list.length]); gVoiceIdx++;
 };
+// 整句朗讀：唸出完整句子讓病人仿說
+$("gReadAll").onclick = () => speak(gMode === "odd" ? oddSentence(oddWords().map(o => o.word)) : joinNames(gItems().map(it => it.name)) + "為" + gCat.word);
 
 // 麥克風：簡單＝說出類別；困難＝整句（每個物品名稱＋類別都要說到）
 let gRec = null, gListening = false;
@@ -573,8 +633,17 @@ $("gMic").onclick = () => {
     got = true;
     const alts = [...e.results[0]].map(a => clean(a.transcript));
     const has = (t, list) => list.some(a => t.includes(a));
-    const ok = alts.some(t => has(t, wordAns) && (gLevel === "easy" || itemAns.every(l => has(t, l))));
     const heard = `<span class="heard">聽到：${alts[0]||""}</span>`;
+    if(gMode === "odd"){   // 說對一個填一個
+      const ws = oddWords(), before = oddFilled.size;
+      ws.forEach((o, i) => { const l = [o.word, o.word + "類", ...o.accept].map(clean); if(alts.some(t => has(t, l))) oddFilled.add(i); });
+      gRender();
+      if(oddFilled.size === ws.length){ gSay("ok", "全部答對了！" + heard); chime(); }
+      else if(oddFilled.size > before) gSay("ok", "很好！還有 1 個" + heard);
+      else gSay("retry", "再試一次" + heard);
+      return;
+    }
+    const ok = alts.some(t => has(t, wordAns) && (gLevel === "easy" || itemAns.every(l => has(t, l))));
     if(ok){ gSay("ok", "答對了！" + heard); chime(); gSolved = true; gRender(); }
     else gSay("retry", "再試一次" + heard);
   };
