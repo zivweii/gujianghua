@@ -50,7 +50,7 @@
   @media (max-width:520px){ .grid{grid-template-columns:1fr 1fr;gap:12px} .cat span{font-size:20px} .brand{font-size:26px} }
 
   /* ===== 練習畫面 ===== */
-  #practiceView,#groupView{height:100dvh;display:grid;gap:16px;
+  #practiceView,#groupView,#listenView{height:100dvh;display:grid;gap:16px;
     padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
   .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
@@ -73,7 +73,7 @@
   .mic.listening{background:#C2553F;animation:pulse 1.2s infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,85,63,.35)}50%{box-shadow:0 0 0 16px rgba(194,85,63,0)}}
   @media (max-width:700px) and (orientation:portrait){
-    #practiceView,#groupView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    #practiceView,#groupView,#listenView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .nav{flex-direction:row}
     .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
     .nav button svg{width:22px;height:22px}
@@ -97,7 +97,8 @@
   .gTopR{display:flex;align-items:center;gap:12px}
   .levelBtn{flex-direction:row;padding:6px 6px;border-radius:14px;font-size:17px;gap:0}
   .levelBtn span{padding:6px 14px;border-radius:10px;color:var(--soft);white-space:nowrap}
-  #gName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #gProgress{white-space:nowrap}
+  #gName,#lName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #gProgress,#lProgress{white-space:nowrap}
+  #listenView .top{gap:10px}
   #groupView .top{gap:10px}
   .levelBtn span.on{background:var(--accent);color:#fff}
   .gPics{flex:1 1 0;min-height:0;width:100%;display:grid;gap:10px;grid-template-rows:1fr;grid-auto-rows:1fr}
@@ -114,6 +115,22 @@
   #gDone .row{display:flex;gap:16px}
   #gDone button{padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px}
   @media (max-width:520px){ .levelBtn span{padding:6px 10px} .countBtn{font-size:20px;height:60px} .catBtn{font-size:18px;height:60px} .catBtns{grid-template-columns:1fr 1fr} #gDone h2{font-size:36px} }
+  /* ===== 詞彙聽理解 ===== */
+  #lPics .cell{cursor:pointer;border-radius:16px;border:4px solid transparent;transition:opacity .2s}
+  #lPics .cell.ok{border-color:var(--ok);background:#EEF6F2}
+  #lPics .cell.no{opacity:.3}
+  #lPics .cell.shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+  #lHint{flex:none;background:#F3F0EA;border-radius:16px;padding:6px 18px;margin-top:10px;min-height:0}
+  #lHint:empty{display:none}
+  #listenView .tools{gap:28px}
+  @media (max-width:700px) and (orientation:portrait){
+    .gPics.n2{grid-template-columns:1fr;grid-template-rows:1fr 1fr}
+    .gPics.n3{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+    .gPics.n3 .cell:nth-child(3){grid-column:1/span 2}
+    .gPics.n5{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr}
+    .gPics.n5 .cell{grid-column:auto} .gPics.n5 .cell:nth-child(4){grid-column:auto} .gPics.n5 .cell:nth-child(5){grid-column:1/span 2}
+  }
 </style>
 </head>
 <body>
@@ -170,6 +187,42 @@
   <div class="countRow" id="oddCountRow"></div>
   <div class="secTitle">選一個類別開始練習</div>
   <div class="catBtns" id="oddCats"></div>
+</div>
+
+<!-- 詞彙聽理解：選張數與類別 -->
+<div id="listenSetupView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" id="listenBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
+    <h1>詞彙聽理解</h1></div></div>
+  <div class="secTitle">一次出現幾張圖片</div>
+  <div class="countRow" id="lCountRow"></div>
+  <div class="secTitle">選一個類別開始練習</div>
+  <div class="catBtns" id="lCats"></div>
+</div>
+
+<!-- 詞彙聽理解：練習畫面 -->
+<div id="listenView" class="practice hidden">
+  <div class="top"><span id="lName"></span>
+    <div class="gTopR">
+      <button class="levelBtn" id="lLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button>
+      <span id="lProgress"></span></div></div>
+  <div class="pic">
+    <div class="gPics" id="lPics"></div>
+    <div class="hint sentence" id="lHint"></div>
+    <div class="feedback" id="lFeedback"></div>
+    <div id="lDone" class="hidden" style="position:absolute;inset:0;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:24px">
+      <h2 style="font-size:48px;margin:0;color:var(--accent)">恭喜完成！</h2><p id="lDoneText" style="font-size:22px;color:var(--soft);margin:0"></p>
+      <div style="display:flex;gap:16px"><button id="lAgain" style="padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px">再練一次</button><button id="lMenu" style="padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px">回到選單</button></div></div>
+  </div>
+  <div class="nav">
+    <button id="lPrev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>上一題</button>
+    <button id="lNext"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>下一題</button>
+    <button id="lHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
+  </div>
+  <div class="tools">
+    <button class="tool" id="lVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
+    <button class="tool" id="lText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
+  </div>
 </div>
 
 <!-- 同類命名：練習畫面 -->
@@ -238,11 +291,12 @@ renderOrder();
 // 主題清單：之後新增主題，只要在這裡加一筆
 const THEMES = [
   { id: "naming", name: "詞彙命名", cats: DATA },
+  { id: "listen", name: "詞彙聽理解", page: "listenSetupView" },
   { id: "func", name: "功能性詞彙", cats: (typeof FUNC_DATA !== "undefined" ? FUNC_DATA : []) },
   { id: "class", name: "分類練習", page: "classView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -692,6 +746,113 @@ if("serviceWorker" in navigator && (location.protocol === "https:" || location.h
     }, 8000);
   }).catch(() => {});
 }
+</script>
+<script>
+// ===================== 詞彙聽理解 =====================
+// 系統唸出一個詞（簡單）或「＿＿在哪裡？」（困難），病人點對應的圖片
+let lCount = store.get("lCount", 2), lLevel = store.get("lLevel", "easy");
+let lCat, lRounds, lPos, lTextStep, lDoneRound;
+$("listenBack").onclick = () => showPage("themeView");
+
+["兩個","三個","四個","五個"].forEach((t, i) => {
+  const b = document.createElement("button");
+  b.className = "countBtn"; b.textContent = t; b.dataset.n = i + 2;
+  b.onclick = () => { lCount = i + 2; store.set("lCount", lCount); renderLCount(); };
+  $("lCountRow").appendChild(b);
+});
+function renderLCount(){ [...$("lCountRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === lCount)); }
+renderLCount();
+{ const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = "全部隨機"; b.style.borderColor = "var(--accent)"; b.style.color = "var(--accent)";
+  b.onclick = () => startListen(null, b);
+  $("lCats").appendChild(b); }
+DATA.forEach(c => {
+  const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = c.name;
+  b.onclick = () => startListen(c, b);
+  $("lCats").appendChild(b);
+});
+
+// iPad 規定：要先在使用者按下按鈕時發一次聲音，之後才能自動播放
+function unlockSpeech(){ try{ const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); }catch(e){} }
+
+// c＝選的類別；null＝全部隨機（每張圖來自不同類別）
+async function startListen(c, btn){
+  unlockSpeech();
+  if(btn){ btn.dataset.name = btn.dataset.name || btn.textContent; btn.textContent = "載入中…"; btn.disabled = true; }
+  try{ await (c ? loadCategory(c.id) : loadPool()); }
+  catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
+  lCat = c ? { id: c.id, name: c.name } : { id: null, name: "全部隨機" };
+  const makeRound = () => {
+    let pics;
+    if(c){
+      const items = window.CAT[c.id];
+      pics = pickRandom(items.length, Math.min(lCount, items.length)).map(i => items[i]);
+    }else{
+      const P = window.ODD_POOL, ids = Object.keys(P), used = new Set();
+      pics = pickRandom(ids.length, Math.min(lCount, ids.length)).map(i => P[ids[i]])
+        .map(list => { let it; do{ it = list[Math.floor(Math.random()*list.length)]; }while(used.has(it.name) && list.length > 1); used.add(it.name); return it; });
+    }
+    return { pics, target: Math.floor(Math.random() * pics.length) };
+  };
+  lRounds = Array.from({length: ROUNDS}, makeRound);
+  lPos = 0;
+  $("lName").textContent = `詞彙聽理解・${lCat.name}・${["","","兩","三","四","五"][lCount]}個`;
+  showPage("listenView");
+  lShow();
+}
+const lTarget = () => lRounds[lPos].pics[lRounds[lPos].target];
+const lPrompt = () => lLevel === "hard" ? lTarget().name + "在哪裡？" : lTarget().name;
+function lSay(cls, html){ $("lFeedback").className = "feedback " + cls; $("lFeedback").innerHTML = html; }
+function lRenderHint(){
+  $("lLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === lLevel));
+  const w = lTarget().name;
+  if(lTextStep === 0 && !lDoneRound){ $("lHint").innerHTML = ""; return; }
+  const t = (lTextStep >= 2 || lDoneRound) ? w : w[0] + "＿".repeat(w.length - 1);
+  $("lHint").innerHTML = `<span class="blank">${t}</span>` + (lLevel === "hard" ? "在哪裡？" : "");
+}
+function lShow(){
+  speechSynthesis.cancel();
+  lTextStep = 0; lDoneRound = false;
+  $("lDone").classList.add("hidden");
+  const r = lRounds[lPos];
+  $("lPics").className = "gPics n" + r.pics.length;
+  $("lPics").innerHTML = r.pics.map((it, i) => `<div class="cell" data-i="${i}"><img src="${it.img}" alt=""></div>`).join("");
+  [...$("lPics").children].forEach(cell => cell.onclick = () => lPick(+cell.dataset.i, cell));
+  lSay("", "");
+  $("lProgress").textContent = `${lPos+1} / ${ROUNDS}`;
+  $("lPrev").disabled = lPos === 0;
+  $("lNext").disabled = false;
+  lRenderHint();
+  setTimeout(() => speak(lPrompt()), 300);   // 進入題目自動播放
+}
+function lPick(i, cell){
+  if(lDoneRound) return;
+  if(i === lRounds[lPos].target){
+    lDoneRound = true; cell.classList.add("ok");
+    [...$("lPics").children].forEach(c => { if(c !== cell) c.classList.add("no"); });
+    lSay("ok", "答對了！"); chime(); lRenderHint();
+  }else{
+    cell.classList.remove("shake"); void cell.offsetWidth; cell.classList.add("shake");
+    lSay("retry", "再試一次");
+  }
+}
+function lFinish(){
+  speechSynthesis.cancel();
+  $("lDoneText").textContent = `${lCat.name}・${ROUNDS} 題都練習完了`;
+  $("lDone").classList.remove("hidden");
+  $("lNext").disabled = true;
+  chime();
+}
+$("lPrev").onclick = () => { if(lPos > 0){ lPos--; lShow(); } };
+$("lNext").onclick = () => { if(lPos < ROUNDS-1){ lPos++; lShow(); } else lFinish(); };
+$("lHome").onclick = () => { speechSynthesis.cancel(); showPage("listenSetupView"); };
+$("lMenu").onclick = () => showPage("listenSetupView");
+$("lAgain").onclick = () => startListen(lCat.id ? DATA.find(c => c.id === lCat.id) : null);
+$("lLevel").onclick = () => { lLevel = lLevel === "easy" ? "hard" : "easy"; store.set("lLevel", lLevel); lRenderHint(); speak(lPrompt()); };
+$("lVoice").onclick = () => speak(lPrompt());   // 再唸一次題目
+$("lText").onclick = () => { lTextStep = Math.min(lTextStep + 1, 2); lRenderHint(); };
 </script>
 </body>
 </html>
