@@ -131,6 +131,28 @@
     .gPics.n5{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr}
     .gPics.n5 .cell{grid-column:auto} .gPics.n5 .cell:nth-child(4){grid-column:auto} .gPics.n5 .cell:nth-child(5){grid-column:1/span 2}
   }
+  /* ===== 詞彙讀理解 ===== */
+  #readView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:minmax(0,1fr) minmax(180px,26%) auto;grid-template-rows:auto 1fr auto;
+    grid-template-areas:"top top top" "pic words nav" "tools tools nav"}
+  #readView .pic img{flex:1;min-height:0;width:100%;object-fit:contain}
+  #rWords{grid-area:words;display:flex;flex-direction:column;justify-content:center;gap:12px;min-height:0}
+  .wordBtn{flex:0 1 96px;min-height:56px;font-size:34px;font-weight:700;border:3px solid var(--line);border-radius:20px;letter-spacing:2px}
+  .wordBtn.ok{border-color:var(--ok);background:#EEF6F2;color:var(--ok)}
+  .wordBtn.no{opacity:.3}
+  .wordBtn.shake{animation:shake .35s}
+  #rHint:empty{display:none}
+  #rHint{flex:none;background:#F3F0EA;border-radius:16px;padding:6px 18px;margin-top:10px}
+  #readView .tools{gap:28px}
+  #rName{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} #rProgress{white-space:nowrap}
+  @media (max-width:700px) and (orientation:portrait){
+    #readView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto auto;grid-template-areas:"top" "nav" "pic" "words" "tools";gap:12px}
+    #readView .nav{flex-direction:row} #readView .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
+    #rWords{display:grid;grid-template-columns:1fr 1fr;gap:10px} .wordBtn{font-size:24px;min-height:60px}
+    #rWords .wordBtn:last-child:nth-child(odd){grid-column:1/span 2}
+  }
+  @media (max-height:500px){ .wordBtn{font-size:24px;min-height:44px} }
 </style>
 </head>
 <body>
@@ -225,6 +247,40 @@
   </div>
 </div>
 
+<!-- 詞彙讀理解：選張數與類別 -->
+<div id="readSetupView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" id="readBack"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
+    <h1>詞彙讀理解</h1></div></div>
+  <div class="secTitle">一次出現幾組文字</div>
+  <div class="countRow" id="rCountRow"></div>
+  <div class="secTitle">選一個類別開始練習</div>
+  <div class="catBtns" id="rCats"></div>
+</div>
+
+<!-- 詞彙讀理解：練習畫面 -->
+<div id="readView" class="practice hidden">
+  <div class="top"><span id="rName"></span><span id="rProgress"></span></div>
+  <div class="pic">
+    <img id="rPhoto" alt="">
+    <div class="hint sentence" id="rHint"></div>
+    <div class="feedback" id="rFeedback"></div>
+    <div id="rDone" class="hidden" style="position:absolute;inset:0;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;border-radius:24px">
+      <h2 style="font-size:48px;margin:0;color:var(--accent)">恭喜完成！</h2><p id="rDoneText" style="font-size:22px;color:var(--soft);margin:0"></p>
+      <div style="display:flex;gap:16px"><button id="rAgain" style="padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px">再練一次</button><button id="rMenu" style="padding:18px 28px;font-size:22px;border:3px solid var(--line);border-radius:18px">回到選單</button></div></div>
+  </div>
+  <div id="rWords"></div>
+  <div class="nav">
+    <button id="rPrev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>上一題</button>
+    <button id="rNext"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>下一題</button>
+    <button id="rHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到主頁</button>
+  </div>
+  <div class="tools">
+    <button class="tool" id="rVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
+    <button class="tool" id="rText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
+  </div>
+</div>
+
 <!-- 同類命名：練習畫面 -->
 <div id="groupView" class="practice hidden">
   <div class="top"><span id="gName"></span>
@@ -292,11 +348,12 @@ renderOrder();
 const THEMES = [
   { id: "naming", name: "詞彙命名", cats: DATA },
   { id: "listen", name: "詞彙聽理解", page: "listenSetupView" },
+  { id: "read", name: "詞彙讀理解", page: "readSetupView" },
   { id: "func", name: "功能性詞彙", cats: (typeof FUNC_DATA !== "undefined" ? FUNC_DATA : []) },
   { id: "class", name: "分類練習", page: "classView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -853,6 +910,102 @@ $("lAgain").onclick = () => startListen(lCat.id ? DATA.find(c => c.id === lCat.i
 $("lLevel").onclick = () => { lLevel = lLevel === "easy" ? "hard" : "easy"; store.set("lLevel", lLevel); lRenderHint(); speak(lPrompt()); };
 $("lVoice").onclick = () => speak(lPrompt());   // 再唸一次題目
 $("lText").onclick = () => { lTextStep = Math.min(lTextStep + 1, 2); lRenderHint(); };
+</script>
+<script>
+// ===================== 詞彙讀理解 =====================
+// 中間一張圖，右邊幾個文字按鈕，病人按出圖片的名稱
+let rCount = store.get("rCount", 2);
+let rCat, rRounds, rPos, rTextStep, rDoneRound;
+$("readBack").onclick = () => showPage("themeView");
+["兩個","三個","四個","五個"].forEach((t, i) => {
+  const b = document.createElement("button");
+  b.className = "countBtn"; b.textContent = t; b.dataset.n = i + 2;
+  b.onclick = () => { rCount = i + 2; store.set("rCount", rCount); renderRCount(); };
+  $("rCountRow").appendChild(b);
+});
+function renderRCount(){ [...$("rCountRow").children].forEach(b => b.classList.toggle("on", +b.dataset.n === rCount)); }
+renderRCount();
+{ const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = "全部隨機"; b.style.borderColor = "var(--accent)"; b.style.color = "var(--accent)";
+  b.onclick = () => startRead(null, b);
+  $("rCats").appendChild(b); }
+DATA.forEach(c => {
+  const b = document.createElement("button");
+  b.className = "catBtn"; b.textContent = c.name;
+  b.onclick = () => startRead(c, b);
+  $("rCats").appendChild(b);
+});
+async function startRead(c, btn){
+  unlockSpeech();
+  if(btn){ btn.dataset.name = btn.dataset.name || btn.textContent; btn.textContent = "載入中…"; btn.disabled = true; }
+  try{ await (c ? loadCategory(c.id) : loadPool()); }
+  catch(e){ alert("載入失敗，請檢查網路後再試一次"); return; }
+  finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
+  rCat = c ? { id: c.id, name: c.name } : { id: null, name: "全部隨機" };
+  const makeRound = () => {
+    let opts;
+    if(c){
+      const items = window.CAT[c.id];
+      opts = pickRandom(items.length, Math.min(rCount, items.length)).map(i => items[i]);
+    }else{
+      const P = window.ODD_POOL, ids = Object.keys(P), used = new Set();
+      opts = pickRandom(ids.length, Math.min(rCount, ids.length)).map(i => P[ids[i]])
+        .map(list => { let it; do{ it = list[Math.floor(Math.random()*list.length)]; }while(used.has(it.name) && list.length > 1); used.add(it.name); return it; });
+    }
+    return { opts, target: Math.floor(Math.random() * opts.length) };
+  };
+  rRounds = Array.from({length: ROUNDS}, makeRound);
+  rPos = 0;
+  $("rName").textContent = `詞彙讀理解・${rCat.name}・${["","","兩","三","四","五"][rCount]}個`;
+  showPage("readView");
+  rShow();
+}
+const rTarget = () => rRounds[rPos].opts[rRounds[rPos].target];
+function rSay(cls, html){ $("rFeedback").className = "feedback " + cls; $("rFeedback").innerHTML = html; }
+function rRenderHint(){
+  const w = rTarget().name;
+  if(rTextStep === 0 && !rDoneRound){ $("rHint").innerHTML = ""; return; }
+  $("rHint").innerHTML = `<span class="blank">${(rTextStep >= 2 || rDoneRound) ? w : w[0] + "＿".repeat(w.length - 1)}</span>`;
+}
+function rShow(){
+  speechSynthesis.cancel();
+  rTextStep = 0; rDoneRound = false;
+  $("rDone").classList.add("hidden");
+  const r = rRounds[rPos];
+  $("rPhoto").src = rTarget().img;
+  $("rWords").innerHTML = r.opts.map((it, i) => `<button class="wordBtn" data-i="${i}">${it.name}</button>`).join("");
+  [...$("rWords").children].forEach(b => b.onclick = () => rPick(+b.dataset.i, b));
+  rSay("", "");
+  $("rProgress").textContent = `${rPos+1} / ${ROUNDS}`;
+  $("rPrev").disabled = rPos === 0;
+  $("rNext").disabled = false;
+  rRenderHint();
+}
+function rPick(i, b){
+  if(rDoneRound) return;
+  if(i === rRounds[rPos].target){
+    rDoneRound = true; b.classList.add("ok");
+    [...$("rWords").children].forEach(x => { if(x !== b) x.classList.add("no"); });
+    rSay("ok", "答對了！"); chime(); rRenderHint();
+  }else{
+    b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+    rSay("retry", "再試一次");
+  }
+}
+function rFinish(){
+  speechSynthesis.cancel();
+  $("rDoneText").textContent = `${rCat.name}・${ROUNDS} 題都練習完了`;
+  $("rDone").classList.remove("hidden");
+  $("rNext").disabled = true;
+  chime();
+}
+$("rPrev").onclick = () => { if(rPos > 0){ rPos--; rShow(); } };
+$("rNext").onclick = () => { if(rPos < ROUNDS-1){ rPos++; rShow(); } else rFinish(); };
+$("rHome").onclick = () => { speechSynthesis.cancel(); showPage("readSetupView"); };
+$("rMenu").onclick = () => showPage("readSetupView");
+$("rAgain").onclick = () => startRead(rCat.id ? DATA.find(c => c.id === rCat.id) : null);
+$("rVoice").onclick = () => speak(rTarget().name);   // 唸出題目
+$("rText").onclick = () => { rTextStep = Math.min(rTextStep + 1, 2); rRenderHint(); };
 </script>
 </body>
 </html>
