@@ -997,7 +997,7 @@ async function startRead(c, btn){
 }
 const rTarget = () => rRounds[rPos].opts[rRounds[rPos].target];
 let rLevel = store.get("rLevel", "easy");   // 功能性詞彙讀理解的簡單/困難
-const rLabel = it => !rFunc ? it.name : (rLevel === "hard" ? `什麼東西可以用來${it.answer}？` : it.answer + "的");   // 按鈕上的字
+const rLabel = it => !rFunc ? it.name : (rLevel === "hard" ? `可以用來${it.answer}的` : it.answer + "的");   // 按鈕上的字
 function rSay(cls, html){ $("rFeedback").className = "feedback " + cls; $("rFeedback").innerHTML = html; }
 function rRenderHint(){
   const w = rLabel(rTarget());
