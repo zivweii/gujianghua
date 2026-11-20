@@ -353,9 +353,9 @@
   </div>
 </div>
 
-<script>const DATA_V = "4782b7b7";</script>
-<script src="data/index.js?v=4782b7b7"></script>
-<script src="data/func_index.js?v=4782b7b7"></script>
+<script>const DATA_V = "782ed614";</script>
+<script src="data/index.js?v=782ed614"></script>
+<script src="data/func_index.js?v=782ed614"></script>
 <script>
 const $ = id => document.getElementById(id);
 const store = {
@@ -647,6 +647,38 @@ function pickRandom(n, k){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a.slice(0, k);
 }
+// 20 題的「答案」順序：先把全部題目洗牌一輪用完才會重複；重複時也不會連續兩題一樣
+function targetSeq(list){
+  const out = [];
+  while(out.length < ROUNDS){
+    const s = pickRandom(list.length, list.length).map(i => list[i]);
+    if(out.length && s.length > 1 && s[0].name === out[out.length-1].name){ [s[0], s[1]] = [s[1], s[0]]; }
+    out.push(...s);
+  }
+  return out.slice(0, ROUNDS);
+}
+// 把答案放進隨機位置
+const withTarget = (others, t) => { const pos = Math.floor(Math.random() * (others.length + 1)); const a = [...others]; a.splice(pos, 0, t); return { items: a, target: pos }; };
+// 詞彙聽理解／讀理解：k 張圖（或 k 個詞），c＝類別（null＝全部隨機）
+function vocabRounds(c, k){
+  if(c){
+    const items = window.CAT[c.id], kk = Math.min(k, items.length);
+    return targetSeq(items).map(t => {
+      const rest = items.filter(x => x.name !== t.name);
+      return withTarget(pickRandom(rest.length, kk - 1).map(i => rest[i]), t);
+    });
+  }
+  const P = window.ODD_POOL, ids = Object.keys(P);
+  const seen = new Set();   // 同名的（例如「魚」在食物和動物都有）只收一次
+  const all = ids.flatMap(id => P[id].map(it => ({ it, id, name: it.name }))).filter(x => !seen.has(x.name) && seen.add(x.name));
+  return targetSeq(all).map(t => {
+    const other = ids.filter(id => id !== t.id), used = new Set([t.name]);
+    const ds = pickRandom(other.length, Math.min(k - 1, other.length)).map(i => P[other[i]]).map(list => {
+      let it; do{ it = list[Math.floor(Math.random() * list.length)]; }while(used.has(it.name) && list.length > 1); used.add(it.name); return it;
+    });
+    return withTarget(ds, t.it);
+  });
+}
 async function startGroup(c){
   const btn = [...$("groupCats").children].find(b => b.textContent === c.name);
   if(btn && !(window.CAT && window.CAT[c.id])){ btn.textContent = "載入中…"; btn.disabled = true; }
@@ -870,19 +902,7 @@ async function startListen(c, btn){
   finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
   lFunc = false;
   lCat = c ? { id: c.id, name: c.name } : { id: null, name: "全部隨機" };
-  const makeRound = () => {
-    let pics;
-    if(c){
-      const items = window.CAT[c.id];
-      pics = pickRandom(items.length, Math.min(lCount, items.length)).map(i => items[i]);
-    }else{
-      const P = window.ODD_POOL, ids = Object.keys(P), used = new Set();
-      pics = pickRandom(ids.length, Math.min(lCount, ids.length)).map(i => P[ids[i]])
-        .map(list => { let it; do{ it = list[Math.floor(Math.random()*list.length)]; }while(used.has(it.name) && list.length > 1); used.add(it.name); return it; });
-    }
-    return { pics, target: Math.floor(Math.random() * pics.length) };
-  };
-  lRounds = Array.from({length: ROUNDS}, makeRound);
+  lRounds = vocabRounds(c, lCount).map(r => ({ pics: r.items, target: r.target }));
   lPos = 0;
   $("lName").textContent = `詞彙聽理解・${lCat.name}・${["","","兩","三","四","五"][lCount]}個`;
   showPage("listenView");
@@ -978,19 +998,7 @@ async function startRead(c, btn){
   finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
   rFunc = false;
   rCat = c ? { id: c.id, name: c.name } : { id: null, name: "全部隨機" };
-  const makeRound = () => {
-    let opts;
-    if(c){
-      const items = window.CAT[c.id];
-      opts = pickRandom(items.length, Math.min(rCount, items.length)).map(i => items[i]);
-    }else{
-      const P = window.ODD_POOL, ids = Object.keys(P), used = new Set();
-      opts = pickRandom(ids.length, Math.min(rCount, ids.length)).map(i => P[ids[i]])
-        .map(list => { let it; do{ it = list[Math.floor(Math.random()*list.length)]; }while(used.has(it.name) && list.length > 1); used.add(it.name); return it; });
-    }
-    return { opts, target: Math.floor(Math.random() * opts.length) };
-  };
-  rRounds = Array.from({length: ROUNDS}, makeRound);
+  rRounds = vocabRounds(c, rCount).map(r => ({ opts: r.items, target: r.target }));
   rPos = 0;
   $("rName").textContent = `詞彙讀理解・${rCat.name}・${["","","兩","三","四","五"][rCount]}個`;
   showPage("readView");
@@ -1106,7 +1114,8 @@ async function startFunc(mode, c, btn){
   finally{ if(btn){ btn.textContent = btn.dataset.name; btn.disabled = false; } }
   const list = c ? window.CAT[c.id] : Object.values(window.FUNC_POOL).flat();
   const k = mode === "l" ? flCount : frCount;
-  const rounds = Array.from({length: ROUNDS}, () => { const items = pickDistinct(list, k); return { items, target: Math.floor(Math.random() * items.length) }; });
+  // 答案先洗牌一輪才重複；其他選項不可和答案用途重疊
+  const rounds = targetSeq(list).map(t => withTarget(pickDistinct(list.filter(x => x.name !== t.name && !clash(x, t)), k - 1), t));
   const cat = c ? { id: c.id, name: c.name } : { id: null, name: "全部隨機" };
   const n = ["","","兩","三","四","五"][k];
   if(mode === "l"){
