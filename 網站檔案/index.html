@@ -101,8 +101,10 @@
   .mptBar.goal i{background:#E0A83A}
   .mptStatus{font-size:26px;font-weight:600;min-height:36px;text-align:center}
   .mptStatus.ok{color:var(--ok)}
-  .mptLevel{width:min(260px,60%);height:8px;border-radius:4px;background:var(--line);overflow:hidden}
-  .mptLevel i{display:block;height:100%;width:0;background:#9BB8AE;transition:width .08s}
+  .mptLevel{position:relative;width:min(320px,70%);height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+  .mptLevel i{display:block;height:100%;width:0;background:#C9C3B8;transition:width .08s}
+  .mptLevel.on i{background:var(--accent)}
+  .mptLevel b{position:absolute;top:0;bottom:0;width:3px;background:#C2553F;left:-10px}
   .mptLog{font-size:18px;color:var(--soft);text-align:center;line-height:1.6}
   .mptLog b{color:var(--accent)}
   #mptView .tools{grid-area:tools}
@@ -303,7 +305,7 @@
     <div class="mptRow"><div class="mptTime" id="mptTime">0.0<small>秒</small></div><div class="mptTip">發ㄚ，越長越好，最少10秒</div></div>
     <div class="mptBar" id="mptBar"><i></i></div>
     <div class="mptStatus" id="mptStatus">按下麥克風，然後發「ㄚ」，越長越好，最少10秒</div>
-    <div class="mptLevel" id="mptLevel"><i></i></div>
+    <div class="mptLevel" id="mptLevel"><i></i><b></b></div>
     <div class="mptLog" id="mptLog"></div>
   </div>
   <div class="nav">
@@ -1206,7 +1208,7 @@ function mptRelease(){
   cancelAnimationFrame(mpt.raf); mpt.raf = 0;
   if(mpt.stream){ mpt.stream.getTracks().forEach(t => t.stop()); mpt.stream = null; }
   if(mpt.ctx){ try{ mpt.ctx.close(); }catch(e){} mpt.ctx = null; }
-  $("mptLevel").querySelector("i").style.width = "0";
+  $("mptLevel").querySelector("i").style.width = "0"; $("mptLevel").classList.remove("on");
 }
 function mptFinish(sec){
   mptRelease(); mpt.state = "idle"; mptMic(false, "再試一次");
@@ -1238,22 +1240,32 @@ async function mptBegin(){
   const an = ctx.createAnalyser(); an.fftSize = 1024;
   ctx.createMediaStreamSource(mpt.stream).connect(an);
   const buf = new Float32Array(an.fftSize);
-  const t0 = performance.now(); let floor = 0, nFloor = 0, thr = 0.02, loudSince = 0, quietSince = 0;
-  mpt.state = "wait"; mptMic(true, "按我停止"); mptStatus("準備中…");
+  // 音量用分貝顯示：-60dB（很小聲）～ -10dB（很大聲）；紅線＝開始計時的門檻
+  const pct = v => Math.max(0, Math.min(100, (20 * Math.log10(Math.max(v, 1e-6)) + 60) / 50 * 100));
+  const t0 = performance.now(), recent = []; let thr = 0.006, lv = 0, loudSince = 0, quietSince = 0;
+  mpt.state = "wait"; mptMic(true, "按我停止"); mptStatus("請開始發「ㄚ」——");
   const loop = () => {
     if(mpt.state === "idle") return;
     an.getFloatTimeDomainData(buf);
     let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
     const rms = Math.sqrt(sum / buf.length), now = performance.now();
-    $("mptLevel").querySelector("i").style.width = Math.min(100, rms / (thr * 4) * 100) + "%";
-    if(now - t0 < 400){ floor += rms; nFloor++; mpt.raf = requestAnimationFrame(loop); return; }   // 先聽 0.4 秒環境聲音
-    if(nFloor){ thr = Math.max(0.012, (floor / nFloor) * 3); nFloor = 0; mptStatus("請開始發「ㄚ」——"); }
+    lv = lv ? lv * 0.6 + rms * 0.4 : rms;   // 平滑一點，避免忽大忽小
+    if(rms < 1e-5){ mpt.raf = requestAnimationFrame(loop); return; }   // 麥克風剛打開時會先送一段全靜音，略過
+    // 等待開始時，持續量最近約 1 秒的環境聲音（取比較安靜的那段），門檻＝環境×2.5，
+    // 並限制在很小聲～中等之間（病人一按就開始發聲也沒關係，門檻最高只到 0.02）
     if(mpt.state === "wait"){
-      if(rms > thr){ if(!loudSince) loudSince = now; if(now - loudSince > 150){ mpt.state = "run"; mpt.start = loudSince; mptStatus("很好，繼續發「ㄚ」……"); } }
+      recent.push(rms); if(recent.length > 60) recent.shift();
+      const c = [...recent].sort((a, b) => a - b);
+      thr = Math.min(0.02, Math.max(0.003, c[Math.floor(c.length * 0.2)] * 2.5));
+      if(recent.length < 10){ mpt.raf = requestAnimationFrame(loop); return; }
+    }
+    const L = $("mptLevel"); L.querySelector("i").style.width = pct(lv) + "%"; L.querySelector("b").style.left = `calc(${pct(thr)}% - 1px)`; L.classList.toggle("on", lv > thr);
+    if(mpt.state === "wait"){
+      if(lv > thr){ if(!loudSince) loudSince = now; if(now - loudSince > 120){ mpt.state = "run"; mpt.start = loudSince; quietSince = 0; mptStatus("很好，繼續發「ㄚ」……"); } }
       else loudSince = 0;
       if(mpt.state === "wait" && now - t0 > 20000){ mptStatus("沒有聽到聲音，請再按一次麥克風"); mptFinish(null); return; }
     }else if(mpt.state === "run"){
-      if(rms < thr * 0.7){ if(!quietSince) quietSince = now; if(now - quietSince > 700){ mptFinish((quietSince - mpt.start) / 1000); return; } }
+      if(lv < thr * 0.6){ if(!quietSince) quietSince = now; if(now - quietSince > 1000){ mptFinish((quietSince - mpt.start) / 1000); return; } }
       else quietSince = 0;
       const sec = (now - mpt.start) / 1000;
       mptShowTime(sec, true);
