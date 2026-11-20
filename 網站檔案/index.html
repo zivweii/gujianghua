@@ -302,7 +302,7 @@
 <div id="mptView" class="hidden">
   <div class="top"><span>聲音練習・最長發聲</span><span id="mptBest"></span></div>
   <div class="pic">
-    <div class="mptRow"><div class="mptTime" id="mptTime">0.0<small>秒</small></div><div class="mptTip">發ㄚ，越長越好，最少10秒</div></div>
+    <div class="mptRow"><div class="mptTime" id="mptTime">0.0<small>秒</small></div></div>
     <div class="mptBar" id="mptBar"><i></i></div>
     <div class="mptStatus" id="mptStatus">按下麥克風，然後發「ㄚ」，越長越好，最少10秒</div>
     <div class="mptLevel" id="mptLevel"><i></i><b></b></div>
@@ -1261,7 +1261,7 @@ async function mptBegin(){
     }
     const L = $("mptLevel"); L.querySelector("i").style.width = pct(lv) + "%"; L.querySelector("b").style.left = `calc(${pct(thr)}% - 1px)`; L.classList.toggle("on", lv > thr);
     if(mpt.state === "wait"){
-      if(lv > thr){ if(!loudSince) loudSince = now; if(now - loudSince > 120){ mpt.state = "run"; mpt.start = loudSince; quietSince = 0; mptStatus("很好，繼續發「ㄚ」……"); } }
+      if(lv > thr){ if(!loudSince) loudSince = now; if(now - loudSince > 120){ mpt.state = "run"; mpt.start = loudSince; quietSince = 0; mptStatus("持續發「ㄚ」……"); } }
       else loudSince = 0;
       if(mpt.state === "wait" && now - t0 > 20000){ mptStatus("沒有聽到聲音，請再按一次麥克風"); mptFinish(null); return; }
     }else if(mpt.state === "run"){
