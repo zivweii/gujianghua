@@ -91,7 +91,7 @@
     grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
   #mptView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
   #mptView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;min-height:0}
-  .mptRow{display:flex;align-items:flex-end;justify-content:center;gap:22px;flex-wrap:wrap}
+  .mptRow{display:flex;align-items:center;justify-content:center;gap:40px;flex-wrap:wrap}
   .mptTime{font-size:min(30vw,190px);font-weight:700;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink)}
   .mptTime small{font-size:.28em;font-weight:600;margin-left:8px;color:var(--soft)}
   .mptTime.run{color:var(--accent)}
@@ -105,12 +105,14 @@
   .mptLevel i{display:block;height:100%;width:0;background:#C9C3B8;transition:width .08s}
   .mptLevel.on i{background:var(--accent)}
   .mptLevel b{position:absolute;top:0;bottom:0;width:3px;background:#C2553F;left:-10px}
-  .mptLog{font-size:18px;color:var(--soft);text-align:center;line-height:1.6}
-  .mptLog b{color:var(--accent)}
+  .mptLog{list-style:none;margin:0;padding:0;font-size:28px;line-height:1.55;color:var(--soft);font-variant-numeric:tabular-nums;min-width:150px}
+  .mptLog li b{color:var(--accent)}
+  .mptLog:empty{display:none}
   #mptView .tools{grid-area:tools}
   @media (max-width:700px) and (orientation:portrait){
     #mptView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .mptTip{padding-bottom:0;width:100%;text-align:center} .mptStatus{font-size:22px}
+    .mptRow{gap:8px 24px} .mptLog{font-size:20px;min-width:0;display:flex;flex-wrap:wrap;gap:0 14px;justify-content:center;width:100%}
   }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
@@ -302,11 +304,10 @@
 <div id="mptView" class="hidden">
   <div class="top"><span>聲音練習・最長發聲</span><span id="mptBest"></span></div>
   <div class="pic">
-    <div class="mptRow"><div class="mptTime" id="mptTime">0.0<small>秒</small></div></div>
+    <div class="mptRow"><div class="mptTime" id="mptTime">0.0<small>秒</small></div><ol class="mptLog" id="mptLog"></ol></div>
     <div class="mptBar" id="mptBar"><i></i></div>
     <div class="mptStatus" id="mptStatus">按下麥克風，然後發「ㄚ」，越長越好，最少10秒</div>
     <div class="mptLevel" id="mptLevel"><i></i><b></b></div>
-    <div class="mptLog" id="mptLog"></div>
   </div>
   <div class="nav">
     <button id="mptReset"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 102-8.5L4 10"/></svg>重來</button>
@@ -1201,7 +1202,9 @@ function mptMic(on, label){ $("mptMic").classList.toggle("listening", on); $("mp
 function mptRenderLog(){
   if(!mpt.tries.length){ $("mptLog").innerHTML = ""; $("mptBest").textContent = ""; return; }
   const best = Math.max(...mpt.tries);
-  $("mptLog").innerHTML = mpt.tries.map((t, i) => (t === best ? `<b>第${i+1}次 ${t.toFixed(1)}秒</b>` : `第${i+1}次 ${t.toFixed(1)}秒`)).join("　");
+  // 秒數右邊：最近 5 次（直列），最好的一次用綠色粗字
+  const from = Math.max(0, mpt.tries.length - 5);
+  $("mptLog").innerHTML = mpt.tries.slice(from).map((t, j) => { const line = `${from + j + 1}. ${t.toFixed(1)}秒`; return `<li>${t === best ? `<b>${line}</b>` : line}</li>`; }).join("");
   $("mptBest").textContent = `最佳 ${best.toFixed(1)} 秒`;
 }
 function mptRelease(){
