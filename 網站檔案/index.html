@@ -108,6 +108,13 @@
   .mptLog{list-style:none;margin:0;padding:0;font-size:28px;line-height:1.55;color:var(--soft);font-variant-numeric:tabular-nums;min-width:150px}
   .mptLog li b{color:var(--accent)}
   .mptLog:empty{display:none}
+  /* 平板橫放：紀錄靠卡片右邊，秒數單獨置中 */
+  @media (min-width:1100px){
+    #mptView .pic{position:relative}
+    .mptLog{position:absolute;right:36px;top:50%;transform:translateY(-50%);font-size:24px;line-height:1.7;
+      padding-left:22px;border-left:2px solid var(--line);min-width:0}
+    .mptLog::before{content:"紀錄";display:block;font-size:16px;color:var(--soft);margin-bottom:4px}
+  }
   #mptView .tools{grid-area:tools}
   @media (max-width:700px) and (orientation:portrait){
     #mptView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
