@@ -148,6 +148,8 @@
   }
   /* ===== 聲音練習：聲音漸強 ===== */
   #voiceBtns{grid-template-columns:repeat(3,1fr)}
+  #voiceBtns .catBtn{color:var(--accent);font-size:28px;font-weight:700;height:96px}   /* 和主畫面一樣的綠色字，字大一點 */
+  @media (max-width:520px){ #voiceBtns{grid-template-columns:1fr 1fr} #voiceBtns .catBtn{font-size:22px;height:72px} }
   #crView{height:100dvh;display:grid;gap:16px;
     padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
@@ -390,10 +392,10 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>聲音練習</h1></div></div>
   <div class="secTitle">選一個練習</div>
-  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="crStart">聲音漸強</button><button class="catBtn" id="mxStart">最大聲音</button></div>
+  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="mxStart">最大音量</button><button class="catBtn" id="crStart">音量漸強</button></div>
 </div>
 <div id="mxView" class="hidden">
-  <div class="top"><span>聲音練習・最大聲音</span>
+  <div class="top"><span>聲音練習・最大音量</span>
     <div class="gTopR"><button class="levelBtn" id="mxLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button></div></div>
   <div class="pic">
     <div class="mxDb"><div class="mxDbLbl">分貝</div><div class="mxDbNum" id="mxDbNum">--<small>dB</small></div><div class="mxDbBar" id="mxDbBar"><i></i><b></b></div></div>
@@ -411,7 +413,7 @@
   </div>
 </div>
 <div id="crView" class="hidden">
-  <div class="top"><span id="crName">聲音練習・聲音漸強</span>
+  <div class="top"><span id="crName">聲音練習・音量漸強</span>
     <div class="gTopR"><button class="levelBtn" id="crLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button></div></div>
   <div class="pic">
     <div class="crRow" id="crRow"></div>
@@ -558,9 +560,9 @@
   </div>
 </div>
 
-<script>const DATA_V = "1f348248";</script>
-<script src="data/index.js?v=1f348248"></script>
-<script src="data/func_index.js?v=1f348248"></script>
+<script>const DATA_V = "b397c0d5";</script>
+<script src="data/index.js?v=b397c0d5"></script>
+<script src="data/func_index.js?v=b397c0d5"></script>
 <script>
 const $ = id => document.getElementById(id);
 const store = {
@@ -1582,7 +1584,7 @@ $("glReset").onclick = () => glReset(true);
 $("glHome").onclick = () => { if(gl.state !== "idle"){ glRelease(); gl.state = "idle"; } showPage("voiceView")   /* 回到聲音練習的選單 */; };
 </script>
 <script>
-// ===================== 聲音練習：聲音漸強 =====================
+// ===================== 聲音練習：音量漸強 =====================
 // 病人連續唸 1、2、3（困難：到 5），字和字之間不需要停頓。
 // 每個字的音量會「先變大、再變小」，用這個起伏找出每個字的最大音量（字和字之間的小凹陷就是分界）。
 // 一開口就點亮 1；之後只要某個字比目前亮著的那個字再大聲約 1.5 分貝（×1.18），就跳到下一個圓圈。
@@ -1722,10 +1724,10 @@ $("crHome").onclick = () => { if(cr.state !== "idle"){ crRelease(); cr.state = "
 window.addEventListener("resize", () => { if(!$("crView").classList.contains("hidden")) { const keep = cr.peaks.length; crBuild(); } });
 </script>
 <script>
-// ===================== 聲音練習：最大聲音（階梯） =====================
-// 每發一聲大聲的「ㄚ」超過 55 分貝，球就往上跳一階；簡單 3 階、困難 5 階。
+// ===================== 聲音練習：最大音量（階梯） =====================
+// 每發一聲大聲的「ㄚ」超過 MX.GOAL 分貝，球就往上跳一階；簡單 3 階、困難 5 階。
 // 分貝是「估計值」：網頁只能拿到相對音量，用 MX.OFFSET 換算成大約的分貝（iPad 麥克風、AGC 關閉）。
-const MX = { GOAL: 55, REARM: 50, OFFSET: 94, MIN: 30, MAXDB: 90 };
+const MX = { GOAL: 60, REARM: 55, OFFSET: 94, MIN: 30, MAXDB: 90 };   // GOAL：超過幾分貝球才跳（2026-11-23 由 55 調高到 60）
 let mx = { level: store.get("mxLevel", "easy"), state: "idle", stream: null, ctx: null, raf: 0, pos: 0, done: 0, anim: 0 };
 const mxN = () => mx.level === "hard" ? 5 : 3;
 const mxGeo = () => {   // 階梯幾何：共 N+1 塊（最左邊一塊是起點）
