@@ -1,7 +1,7 @@
 // 顧講話：把照片檔存在 iPad 上，第二次打開就不用再下載
 // 照片檔（data/*.js?v=版本）：先用存好的；版本號變了就是新網址，會重新下載
 // 網頁本身（index.html 等）：先上網拿最新的，沒網路時才用存好的
-const CACHE = "gjh-v1";
+const CACHE = "gjh-v1";   // 2026-11-21：網頁本身改成每次確認新版
 
 self.addEventListener("install", e => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil((async () => {
@@ -30,7 +30,8 @@ self.addEventListener("fetch", e => {
       return res;
     }
     try {
-      const res = await fetch(e.request);
+      // no-cache：每次都向 GitHub 確認有沒有新版（GitHub 預設會讓瀏覽器沿用舊檔 10 分鐘）
+      const res = await fetch(e.request.url, { cache: "no-cache", credentials: "same-origin" });
       if (res.ok) cache.put(e.request, res.clone());
       return res;
     } catch (err) {
