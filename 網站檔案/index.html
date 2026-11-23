@@ -178,6 +178,33 @@
     #crView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .crGuide{font-size:28px} .crStatus{font-size:18px} .crRow{gap:10px}
   }
+  /* ===== 聲音練習：最大聲音（階梯） ===== */
+  #mxView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
+  #mxView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
+  #mxView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;min-height:0;position:relative}
+  #mxView .tools{grid-area:tools}
+  .mxGuide{font-size:38px;font-weight:700;letter-spacing:4px}
+  .mxStage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+  .mxStage svg{width:100%;height:100%;max-height:56vh}
+  .mxStep{fill:#ECE8E1;transition:fill .3s} .mxStep.reached{fill:#CFE3DB} .mxStep.top{fill:#F3E2BC} .mxStep.top.reached{fill:#E0A83A}
+  .mxBall{fill:#E0703A}
+  .mxDb{position:absolute;left:24px;top:20px;display:flex;flex-direction:column;gap:6px;min-width:150px}
+  .mxDbNum{font-size:44px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1}
+  .mxDbNum small{font-size:.42em;color:var(--soft);margin-left:4px}
+  .mxDbNum.loud{color:var(--accent)}
+  .mxDbBar{position:relative;width:160px;height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+  .mxDbBar i{display:block;height:100%;width:0;background:#C9C3B8;transition:width .06s}
+  .mxDbBar.loud i{background:var(--accent)}
+  .mxDbBar b{position:absolute;top:0;bottom:0;width:3px;background:#C2553F}
+  .mxDbLbl{font-size:14px;color:var(--soft)}
+  .mxStatus{font-size:22px;font-weight:600;min-height:30px;color:var(--soft);text-align:center}
+  .mxStatus.ok{color:var(--ok)}
+  @media (max-width:700px) and (orientation:portrait){
+    #mxView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    .mxDb{position:static;align-self:flex-start} .mxGuide{font-size:28px} .mxStatus{font-size:18px}
+  }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
@@ -363,7 +390,25 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>聲音練習</h1></div></div>
   <div class="secTitle">選一個練習</div>
-  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="crStart">聲音漸強</button></div>
+  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="crStart">聲音漸強</button><button class="catBtn" id="mxStart">最大聲音</button></div>
+</div>
+<div id="mxView" class="hidden">
+  <div class="top"><span>聲音練習・最大聲音</span>
+    <div class="gTopR"><button class="levelBtn" id="mxLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button></div></div>
+  <div class="pic">
+    <div class="mxDb"><div class="mxDbLbl">分貝</div><div class="mxDbNum" id="mxDbNum">--<small>dB</small></div><div class="mxDbBar" id="mxDbBar"><i></i><b></b></div></div>
+    <div class="mxGuide">用力發ㄚ</div>
+    <div class="mxStage"><svg id="mxSvg" viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="mxStatus" id="mxStatus">按下麥克風開始</div>
+    <ol class="doneLog" id="mxDone"></ol>
+  </div>
+  <div class="nav">
+    <button id="mxReset"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 102-8.5L4 10"/></svg>重來</button>
+    <button id="mxHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
+  </div>
+  <div class="tools">
+    <button class="mic" id="mxMic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="mxMicLabel">按我開始</span></button>
+  </div>
 </div>
 <div id="crView" class="hidden">
   <div class="top"><span id="crName">聲音練習・聲音漸強</span>
@@ -541,7 +586,7 @@ const THEMES = [
   { id: "voice", name: "聲音練習", page: "voiceView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView","crView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView","crView","mxView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -1675,6 +1720,105 @@ $("crStart").onclick = () => { showPage("crView"); crReset(); };
 $("crReset").onclick = () => crReset(true);
 $("crHome").onclick = () => { if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } showPage("voiceView"); };
 window.addEventListener("resize", () => { if(!$("crView").classList.contains("hidden")) { const keep = cr.peaks.length; crBuild(); } });
+</script>
+<script>
+// ===================== 聲音練習：最大聲音（階梯） =====================
+// 每發一聲大聲的「ㄚ」超過 55 分貝，球就往上跳一階；簡單 3 階、困難 5 階。
+// 分貝是「估計值」：網頁只能拿到相對音量，用 MX.OFFSET 換算成大約的分貝（iPad 麥克風、AGC 關閉）。
+const MX = { GOAL: 55, REARM: 50, OFFSET: 94, MIN: 30, MAXDB: 90 };
+let mx = { level: store.get("mxLevel", "easy"), state: "idle", stream: null, ctx: null, raf: 0, pos: 0, done: 0, anim: 0 };
+const mxN = () => mx.level === "hard" ? 5 : 3;
+const mxGeo = () => {   // 階梯幾何：共 N+1 塊（最左邊一塊是起點）
+  const n = mxN(), cols = n + 1, x0 = 60, x1 = 940, yB = 500, yT = 110, w = (x1 - x0) / cols, h = (yB - yT) / cols;
+  return { n, cols, x0, w, h, yB, top: i => yB - (i + 1) * h, cx: i => x0 + w * i + w / 2, r: Math.min(w, h) * 0.32 };
+};
+function mxDraw(){
+  const g = mxGeo(); let svg = "";
+  for(let i = 0; i < g.cols; i++){
+    const cls = "mxStep" + (i === g.cols - 1 ? " top" : "") + (i <= mx.pos && i > 0 ? " reached" : "");
+    svg += `<rect class="${cls}" x="${g.x0 + g.w * i + 3}" y="${g.top(i)}" width="${g.w - 6}" height="${g.yB - g.top(i)}" rx="10"/>`;
+  }
+  // 最上面那階插一面小旗子
+  const fx = g.cx(g.cols - 1) + g.w * 0.22, fy = g.top(g.cols - 1);
+  svg += `<line x1="${fx}" y1="${fy}" x2="${fx}" y2="${fy - g.h * 0.9}" stroke="#8A857C" stroke-width="5"/><path d="M${fx} ${fy - g.h * 0.9} l${g.w * 0.28} ${g.h * 0.18} l${-g.w * 0.28} ${g.h * 0.18}z" fill="#E0703A"/>`;
+  svg += `<circle class="mxBall" id="mxBall" r="${g.r}" cx="${g.cx(mx.pos)}" cy="${g.top(mx.pos) - g.r}"/>`;
+  $("mxSvg").innerHTML = svg;
+  $("mxLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === mx.level));
+}
+function mxJump(){   // 球跳到下一階（拋物線動畫 0.45 秒）
+  const g = mxGeo(), from = mx.pos, to = Math.min(mx.pos + 1, g.n);
+  mx.pos = to;
+  const ball = $("mxBall"), x0 = g.cx(from), y0 = g.top(from) - g.r, x1 = g.cx(to), y1 = g.top(to) - g.r, t0 = performance.now(), D = 450;
+  cancelAnimationFrame(mx.anim);
+  const step = () => {
+    const t = Math.min(1, (performance.now() - t0) / D), x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t - Math.sin(Math.PI * t) * g.h * 1.1;
+    ball.setAttribute("cx", x); ball.setAttribute("cy", y);
+    if(t < 1) mx.anim = requestAnimationFrame(step); else mxDraw();
+  };
+  step();
+}
+function mxStatus(t, ok){ $("mxStatus").textContent = t; $("mxStatus").className = "mxStatus" + (ok ? " ok" : ""); }
+function mxShowDb(db){
+  const loud = db >= MX.GOAL, pct = v => Math.max(0, Math.min(100, (v - MX.MIN) / (MX.MAXDB - MX.MIN) * 100));
+  $("mxDbNum").innerHTML = (db > MX.MIN ? Math.round(db) : "--") + "<small>dB</small>"; $("mxDbNum").classList.toggle("loud", loud);
+  $("mxDbBar").querySelector("i").style.width = pct(db) + "%"; $("mxDbBar").querySelector("b").style.left = `calc(${pct(MX.GOAL)}% - 1px)`; $("mxDbBar").classList.toggle("loud", loud);
+}
+function mxRelease(){
+  cancelAnimationFrame(mx.raf); mx.raf = 0;
+  if(mx.stream){ mx.stream.getTracks().forEach(t => t.stop()); mx.stream = null; }
+  if(mx.ctx){ try{ mx.ctx.close(); }catch(e){} mx.ctx = null; }
+  $("mxMic").classList.remove("listening"); mxShowDb(0);
+}
+function mxFinish(){
+  mxRelease(); mx.state = "idle";
+  if(mx.pos >= mxN()){ mxStatus("很棒！爬到最上面了", true); chime(); mx.done++; renderDone("mxDone", mx.done); $("mxMicLabel").textContent = "再來一次"; }
+  else { mxStatus(mx.pos ? `爬到第 ${mx.pos} 階，再試一次，要更大聲` : "還不夠大聲，再試一次，用力發ㄚ"); $("mxMicLabel").textContent = "再試一次"; }
+}
+async function mxBegin(){
+  if(mx.pos >= mxN()){ mx.pos = 0; mxDraw(); }   // 上次已經爬到頂，重新從底下開始
+  mx.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try{ mx.ctx.resume(); }catch(e){}
+  try{
+    mx.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  }catch(e){
+    try{ mx.ctx.close(); }catch(e2){} mx.ctx = null;
+    mxStatus("無法使用麥克風，請確認 Safari 已允許使用麥克風"); return;
+  }
+  const ctx = mx.ctx; try{ await ctx.resume(); }catch(e){}
+  const an = ctx.createAnalyser(); an.fftSize = 1024;
+  ctx.createMediaStreamSource(mx.stream).connect(an);
+  const buf = new Float32Array(an.fftSize);
+  let lv = 0, shown = 0, loudSince = 0, quietSince = 0, armed = true, lastAct = performance.now();
+  mx.state = "listen"; $("mxMic").classList.add("listening"); $("mxMicLabel").textContent = "按我停止";
+  mxStatus(`用力發「ㄚ」，超過 ${MX.GOAL} 分貝球就會往上跳`);
+  const loop = () => {
+    if(mx.state === "idle") return;
+    an.getFloatTimeDomainData(buf);
+    let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / buf.length), now = performance.now();
+    lv = lv ? lv * 0.6 + rms * 0.4 : rms;
+    const db = 20 * Math.log10(Math.max(lv, 1e-6)) + MX.OFFSET;
+    shown = Math.max(db, shown - 0.6);   // 分貝計：往上立刻跟上，往下慢慢降，比較好看
+    mxShowDb(shown);
+    if(db >= MX.GOAL){
+      if(!loudSince) loudSince = now; quietSince = 0;
+      if(armed && now - loudSince > 80){ armed = false; lastAct = now; mxJump(); if(mx.pos < mxN()) mxStatus("很好！再一聲，用力發ㄚ"); }
+    }else{
+      loudSince = 0;
+      if(db < MX.REARM){ if(!quietSince) quietSince = now; if(now - quietSince > 150) armed = true; }   // 聲音停下來，才能算下一聲
+    }
+    if(mx.pos >= mxN() && now - lastAct > 700){ mxFinish(); return; }
+    if(now - lastAct > 20000){ mxFinish(); return; }   // 太久沒有夠大聲就結束
+    mx.raf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+function mxReset(clear){ if(mx.state !== "idle"){ mxRelease(); mx.state = "idle"; } if(clear === true) mx.done = 0; renderDone("mxDone", mx.done); mx.pos = 0; mxDraw(); mxShowDb(0); $("mxMicLabel").textContent = "按我開始"; mxStatus("按下麥克風開始"); }
+$("mxMic").onclick = () => { if(mx.state === "idle") mxBegin(); else mxFinish(); };
+$("mxLevel").onclick = () => { mx.level = mx.level === "easy" ? "hard" : "easy"; store.set("mxLevel", mx.level); mxReset(); };
+$("mxStart").onclick = () => { showPage("mxView"); mxReset(); };
+$("mxReset").onclick = () => mxReset(true);
+$("mxHome").onclick = () => { if(mx.state !== "idle"){ mxRelease(); mx.state = "idle"; } showPage("voiceView"); };
 </script>
 </body>
 </html>
