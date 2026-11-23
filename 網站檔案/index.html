@@ -164,6 +164,13 @@
   .crC.done{background:var(--accent);color:#fff;animation:none;box-shadow:none}
   .crC.soft{background:#E0A83A;color:#fff;animation:none;box-shadow:none}
   .crC.done .live,.crC.soft .live{display:none}
+  /* 完成紀錄：卡片右下角，由上往下 */
+  .doneLog{position:absolute;right:28px;bottom:22px;list-style:none;margin:0;padding:0 0 0 16px;border-left:2px solid var(--line);
+    font-size:20px;line-height:1.6;color:var(--accent);font-weight:600;text-align:left}
+  .doneLog:empty{display:none}
+  .doneLog::before{content:"完成";display:block;font-size:16px;color:var(--soft);font-weight:400}
+  #crView .pic{position:relative}
+  @media (max-width:700px) and (orientation:portrait){ .doneLog{position:static;display:flex;gap:12px;border:0;padding:0;font-size:15px} .doneLog::before{font-size:15px} }
   .crGuide{font-size:38px;font-weight:700;letter-spacing:4px}
   .crStatus{font-size:22px;font-weight:600;min-height:30px;color:var(--soft);text-align:center}
   .crStatus.ok{color:var(--ok)} .crStatus.warn{color:var(--retry)}
@@ -366,6 +373,7 @@
     <div class="crGuide">越唸越大聲</div>
     <div class="crStatus" id="crStatus">按下麥克風開始</div>
     <div class="mptLevel" id="crMeter"><i></i><b></b></div>
+    <ol class="doneLog" id="crDone"></ol>
   </div>
   <div class="nav">
     <button id="crReset"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 102-8.5L4 10"/></svg>重來</button>
@@ -389,6 +397,7 @@
     <div class="glGuideText" id="glGuideText">發ㄚ慢慢往上滑</div>
     <div class="glStatus" id="glStatus">按下麥克風開始</div>
     <div class="mptLevel" id="glLevel"><i></i><b></b></div>
+    <ol class="doneLog" id="glDone"></ol>
   </div>
   <div class="nav">
     <button id="glReset"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 102-8.5L4 10"/></svg>重來</button>
@@ -1350,7 +1359,7 @@ async function mptBegin(){
     let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
     const rms = Math.sqrt(sum / buf.length), now = performance.now();
     lv = lv ? lv * 0.6 + rms * 0.4 : rms;   // 平滑一點，避免忽大忽小
-    if(rms < 1e-5){ mpt.raf = requestAnimationFrame(loop); return; }   // 麥克風剛打開時會先送一段全靜音，略過
+    if(rms < 1e-5 && mpt.state === "wait"){ mpt.raf = requestAnimationFrame(loop); return; }   // 麥克風剛打開時會先送一段全靜音，略過（開始後的全靜音當作安靜）
     // 等待開始時，持續量最近約 1 秒的環境聲音（取比較安靜的那段），門檻＝環境×2.5，
     // 並限制在很小聲～中等之間（病人一按就開始發聲也沒關係，門檻最高只到 0.02）
     if(mpt.state === "wait"){
@@ -1440,7 +1449,7 @@ function glFinish(sec){
   glShowTime(sec, false);
   const tail = gl.pts.slice(-Math.max(3, Math.floor(gl.pts.length * 0.2))).map(p => p.st).sort((a, b) => a - b);
   const endSt = tail.length ? tail[Math.floor(tail.length / 2)] : 0, moved = gl.dir === "up" ? endSt : -endSt;
-  if(moved >= GL.OK){ glStatus(gl.dir === "up" ? "很棒！聲音有往上滑" : "很棒！聲音有往下滑", true); chime(); }
+  if(moved >= GL.OK){ glStatus(gl.dir === "up" ? "很棒！聲音有往上滑" : "很棒！聲音有往下滑", true); chime(); gl.done[gl.dir]++; renderDone("glDone", gl.done[gl.dir]); }
   else glStatus(gl.dir === "up" ? "再試一次，讓聲音慢慢往上" : "再試一次，讓聲音慢慢往下");
 }
 async function glBegin(){
@@ -1466,7 +1475,7 @@ async function glBegin(){
     an.getFloatTimeDomainData(buf);
     let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
     const rms = Math.sqrt(sum / buf.length), now = performance.now();
-    if(rms < 1e-5){ gl.raf = requestAnimationFrame(loop); return; }
+    if(rms < 1e-5 && gl.state === "wait"){ gl.raf = requestAnimationFrame(loop); return; }
     lv = lv ? lv * 0.6 + rms * 0.4 : rms;
     if(gl.state === "wait"){
       recent.push(rms); if(recent.length > 60) recent.shift();
@@ -1502,14 +1511,21 @@ async function glBegin(){
   };
   loop();
 }
+// 完成紀錄：標題「完成」，下面「1次、2次…」由上往下，最多顯示最近 5 筆
+function renderDone(id, count){
+  const from = Math.max(1, count - 4);
+  $(id).innerHTML = Array.from({length: Math.max(0, count - from + 1)}, (_, k) => `<li>${from + k}次</li>`).join("");
+}
+gl.done = { up: 0, down: 0 };
 function glOpen(dir){
   gl.dir = dir;
   $("glName").textContent = dir === "up" ? "聲音練習・滑音往上" : "聲音練習・滑音往下";
   $("glGuideText").textContent = dir === "up" ? "發ㄚ慢慢往上滑" : "發ㄚ慢慢往下滑";
   $("glGuide").setAttribute("d", glGuidePath(dir));
-  glReset(); showPage("glView");
+  glReset(false); showPage("glView");
 }
-function glReset(){ if(gl.state !== "idle"){ glRelease(); gl.state = "idle"; } gl.pts = []; glDraw(); glShowTime(0, false); $("glMicLabel").textContent = "按我開始"; glStatus("按下麥克風開始"); }
+// clear＝true（按「重來」）時，完成紀錄也歸零；從選單進來時保留
+function glReset(clear){ if(gl.state !== "idle"){ glRelease(); gl.state = "idle"; } if(clear) gl.done[gl.dir] = 0; renderDone("glDone", gl.done[gl.dir]); gl.pts = []; glDraw(); glShowTime(0, false); $("glMicLabel").textContent = "按我開始"; glStatus("按下麥克風開始"); }
 $("glMic").onclick = () => {
   if(gl.state === "idle"){ glBegin(); return; }
   if(gl.state === "run") glFinish((performance.now() - gl.start) / 1000);
@@ -1517,7 +1533,7 @@ $("glMic").onclick = () => {
 };
 $("glUpStart").onclick = () => glOpen("up");
 $("glDownStart").onclick = () => glOpen("down");
-$("glReset").onclick = glReset;
+$("glReset").onclick = () => glReset(true);
 $("glHome").onclick = () => { if(gl.state !== "idle"){ glRelease(); gl.state = "idle"; } showPage("voiceView")   /* 回到聲音練習的選單 */; };
 </script>
 <script>
@@ -1563,7 +1579,7 @@ function crRelease(){
 function crFinish(){
   crRelease(); cr.state = "idle"; $("crMicLabel").textContent = "再試一次"; crMark();
   const n = crN();
-  if(cr.idx >= n){ crStatus("很棒！越唸越大聲", "ok"); chime(); }
+  if(cr.idx >= n){ crStatus("很棒！越唸越大聲", "ok"); chime(); cr.done++; renderDone("crDone", cr.done); }
   else if(cr.idx === 0) crStatus("沒有聽到聲音，請再按一次麥克風");
   else crStatus(`跳到「${cr.idx}」，後面要越唸越大聲才會跳格，再試一次`, "warn");
 }
@@ -1624,7 +1640,7 @@ async function crBegin(){
     const now = performance.now(), L = buf.length;
     let sum = 0; for(let i = L - 1024; i < L; i++) sum += buf[i] * buf[i];
     const rms = Math.sqrt(sum / 1024);
-    if(rms < 1e-5){ lastT = now; cr.raf = requestAnimationFrame(loop); return; }
+    if(rms < 1e-5 && !frozen){ lastT = now; cr.raf = requestAnimationFrame(loop); return; }
     if(!frozen){   // 開口之前，持續量環境聲音決定門檻
       recent.push(rms); if(recent.length > 60) recent.shift();
       const c = [...recent].sort((a, b) => a - b);
@@ -1650,11 +1666,13 @@ async function crBegin(){
   };
   loop();
 }
-function crReset(){ if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } cr.idx = 0; cr.peaks = []; crBuild(); $("crMicLabel").textContent = "按我開始"; crStatus("按下麥克風開始"); }
+cr.done = 0;
+// clear＝true（按「重來」）時，完成紀錄也歸零
+function crReset(clear){ if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } if(clear === true) cr.done = 0; renderDone("crDone", cr.done); cr.idx = 0; cr.peaks = []; crBuild(); $("crMicLabel").textContent = "按我開始"; crStatus("按下麥克風開始"); }
 $("crMic").onclick = () => { if(cr.state === "idle") crBegin(); else crFinish(); };
 $("crLevel").onclick = () => { cr.level = cr.level === "easy" ? "hard" : "easy"; store.set("crLevel", cr.level); crReset(); };
 $("crStart").onclick = () => { showPage("crView"); crReset(); };
-$("crReset").onclick = crReset;
+$("crReset").onclick = () => crReset(true);
 $("crHome").onclick = () => { if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } showPage("voiceView"); };
 window.addEventListener("resize", () => { if(!$("crView").classList.contains("hidden")) { const keep = cr.peaks.length; crBuild(); } });
 </script>
