@@ -207,6 +207,28 @@
     #mxView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .mxDb{position:static;align-self:flex-start} .mxGuide{font-size:28px} .mxStatus{font-size:18px}
   }
+  /* ===== 聲音練習：節奏練習（節拍器） ===== */
+  #rmView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
+  #rmView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
+  #rmView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;min-height:0}
+  #rmView .tools{grid-area:tools}
+  .rmStage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+  .rmStage svg{height:100%;max-height:48vh;width:auto;max-width:100%}
+  .rmBpm{display:flex;align-items:baseline;gap:10px}
+  .rmBpm b{font-size:64px;line-height:1;font-variant-numeric:tabular-nums}
+  .rmBpm span{font-size:18px;color:var(--soft)}
+  .rmCtl{display:flex;align-items:center;gap:18px;width:min(640px,92%)}
+  .rmCtl button{width:64px;height:64px;border-radius:50%;font-size:40px;font-weight:700;color:var(--accent);border:3px solid var(--line);flex:none;line-height:1}
+  .rmCtl input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;background:var(--line);outline:none}
+  .rmCtl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:36px;height:36px;border-radius:50%;background:var(--accent);border:4px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+  .rmCtl input[type=range]::-moz-range-thumb{width:32px;height:32px;border-radius:50%;background:var(--accent);border:4px solid #fff}
+  .rmRange{display:flex;justify-content:space-between;width:min(640px,92%);font-size:15px;color:var(--soft);padding:0 82px;margin-top:-8px}
+  @media (max-width:700px) and (orientation:portrait){
+    #rmView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    .rmBpm b{font-size:48px} .rmCtl button{width:52px;height:52px;font-size:32px} .rmRange{padding:0 70px}
+  }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
@@ -392,7 +414,41 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>聲音練習</h1></div></div>
   <div class="secTitle">選一個練習</div>
-  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="mxStart">最大音量</button><button class="catBtn" id="crStart">音量漸強</button></div>
+  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="mxStart">最大音量</button><button class="catBtn" id="crStart">音量漸強</button><button class="catBtn" id="rmStart">節奏練習</button></div>
+</div>
+<div id="rmView" class="hidden">
+  <div class="top"><span>聲音練習・節奏練習</span><span></span></div>
+  <div class="pic">
+    <div class="rmStage">
+      <svg viewBox="0 0 400 460" aria-label="節拍器">
+        <defs>
+          <linearGradient id="rmBody" x1="0" x2="1"><stop offset="0" stop-color="#F3E6D3"/><stop offset=".55" stop-color="#E9D6BA"/><stop offset="1" stop-color="#D9C19F"/></linearGradient>
+        </defs>
+        <path d="M150 20 L250 20 L345 430 Q345 445 330 445 L70 445 Q55 445 55 430 Z" fill="url(#rmBody)"/>
+        <rect x="178" y="60" width="44" height="250" rx="4" fill="#FBF6EE" stroke="#CDB693"/>
+        <g stroke="#B9A37F" stroke-width="2">
+          <line x1="182" y1="90" x2="218" y2="90"/><line x1="182" y1="120" x2="218" y2="120"/><line x1="182" y1="150" x2="218" y2="150"/>
+          <line x1="182" y1="180" x2="218" y2="180"/><line x1="182" y1="210" x2="218" y2="210"/><line x1="182" y1="240" x2="218" y2="240"/><line x1="182" y1="270" x2="218" y2="270"/>
+        </g>
+        <path d="M95 300 A105 105 0 0 1 305 300" fill="none" stroke="#5B5348" stroke-width="5"/>
+        <line x1="95" y1="300" x2="305" y2="300" stroke="#5B5348" stroke-width="5"/>
+        <g id="rmPend">
+          <line x1="200" y1="370" x2="200" y2="40" stroke="#8C8C8C" stroke-width="9" stroke-linecap="round"/>
+          <rect id="rmWeight" x="184" y="150" width="32" height="40" rx="6" fill="#9A9A9A"/>
+        </g>
+        <circle cx="200" cy="370" r="16" fill="#3C3833"/>
+      </svg>
+    </div>
+    <div class="rmBpm"><b id="rmBpmNum">60</b><span>每分鐘拍數（BPM）</span></div>
+    <div class="rmCtl"><button id="rmMinus" aria-label="減慢">−</button><input type="range" id="rmSlider" min="40" max="90" step="1" value="60"><button id="rmPlus" aria-label="加快">＋</button></div>
+    <div class="rmRange"><span>40 慢</span><span>90 快</span></div>
+  </div>
+  <div class="nav">
+    <button id="rmHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
+  </div>
+  <div class="tools">
+    <button class="mic" id="rmPlay"><svg id="rmIcon" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg><span id="rmPlayLabel">開始</span></button>
+  </div>
 </div>
 <div id="mxView" class="hidden">
   <div class="top"><span>聲音練習・最大音量</span>
@@ -588,7 +644,7 @@ const THEMES = [
   { id: "voice", name: "聲音練習", page: "voiceView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView","crView","mxView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView","crView","mxView","rmView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -1821,6 +1877,59 @@ $("mxLevel").onclick = () => { mx.level = mx.level === "easy" ? "hard" : "easy";
 $("mxStart").onclick = () => { showPage("mxView"); mxReset(); };
 $("mxReset").onclick = () => mxReset(true);
 $("mxHome").onclick = () => { if(mx.state !== "idle"){ mxRelease(); mx.state = "idle"; } showPage("voiceView"); };
+</script>
+<script>
+// ===================== 聲音練習：節奏練習（節拍器） =====================
+// 鐘擺每一拍擺到一邊，擺到最邊邊時發出「答」的一聲。速度 40～90 BPM。
+let rm = { bpm: Math.min(90, Math.max(40, store.get("rmBpm", 60))), on: false, ctx: null, t0: 0, next: 0, beat: 0, raf: 0, timer: 0 };
+const RM_A = 28;   // 鐘擺最大角度
+function rmSetBpm(v){
+  const old = rm.bpm;
+  rm.bpm = Math.min(90, Math.max(40, Math.round(v)));
+  store.set("rmBpm", rm.bpm);
+  $("rmBpmNum").textContent = rm.bpm; $("rmSlider").value = rm.bpm;
+  $("rmWeight").setAttribute("y", 110 + (rm.bpm - 40) * 1.6);   // 速度越快，擺錘越往下（像真的節拍器）
+  if(rm.on && old !== rm.bpm && rm.ctx){   // 播放中改速度：從目前的位置接著算，鐘擺不會跳
+    const now = rm.ctx.currentTime, phase = (now - rm.t0) * old / 60;
+    rm.t0 = now - phase * 60 / rm.bpm; rm.next = rm.t0 + Math.ceil(phase) * 60 / rm.bpm; rm.beat = Math.ceil(phase);
+  }
+}
+function rmTick(when){   // 短短的「答」
+  const c = rm.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = "square"; o.frequency.value = 1500;
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(0.35, when + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+  o.connect(g); g.connect(c.destination); o.start(when); o.stop(when + 0.06);
+}
+function rmSchedule(){   // 先排好接下來 0.15 秒內的拍子聲
+  while(rm.next < rm.ctx.currentTime + 0.15){ rmTick(rm.next); rm.beat++; rm.next = rm.t0 + rm.beat * 60 / rm.bpm; }
+}
+function rmAnimate(){
+  if(!rm.on) return;
+  const phase = (rm.ctx.currentTime - rm.t0) * rm.bpm / 60;   // 第幾拍（小數）
+  const ang = RM_A * Math.cos(Math.PI * phase);               // 拍子正好在左右兩端
+  $("rmPend").setAttribute("transform", `rotate(${ang.toFixed(2)} 200 370)`);
+  rm.raf = requestAnimationFrame(rmAnimate);
+}
+function rmStart(){
+  rm.ctx = rm.ctx || new (window.AudioContext || window.webkitAudioContext)();
+  try{ rm.ctx.resume(); }catch(e){}
+  rm.on = true; rm.t0 = rm.ctx.currentTime + 0.1; rm.beat = 0; rm.next = rm.t0;
+  rmSchedule(); rm.timer = setInterval(rmSchedule, 40); rmAnimate();
+  $("rmPlay").classList.add("listening"); $("rmPlayLabel").textContent = "暫停";
+  $("rmIcon").innerHTML = '<rect x="7" y="5" width="3.5" height="14" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" fill="currentColor"/>';
+}
+function rmStop(){
+  rm.on = false; clearInterval(rm.timer); cancelAnimationFrame(rm.raf);
+  $("rmPend").setAttribute("transform", `rotate(0 200 370)`);
+  $("rmPlay").classList.remove("listening"); $("rmPlayLabel").textContent = "開始";
+  $("rmIcon").innerHTML = '<path d="M8 5l11 7-11 7z" fill="currentColor"/>';
+}
+$("rmPlay").onclick = () => rm.on ? rmStop() : rmStart();
+$("rmMinus").onclick = () => rmSetBpm(rm.bpm - 1);
+$("rmPlus").onclick = () => rmSetBpm(rm.bpm + 1);
+$("rmSlider").oninput = e => rmSetBpm(+e.target.value);
+$("rmStart").onclick = () => { rmSetBpm(rm.bpm); rmStop(); showPage("rmView"); };
+$("rmHome").onclick = () => { rmStop(); showPage("voiceView"); };
 </script>
 </body>
 </html>
