@@ -146,6 +146,31 @@
     .glStage{flex-direction:column;gap:8px} .glStage svg{width:100%;height:auto} .glSide{flex-direction:row;gap:10px}
     .glTime{font-size:40px} .glGuideText{font-size:26px} .glStatus{font-size:18px}
   }
+  /* ===== 聲音練習：聲音漸強 ===== */
+  #voiceBtns{grid-template-columns:repeat(3,1fr)}
+  #crView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
+  #crView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
+  #crView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:20px;min-height:0}
+  #crView .tools{grid-area:tools}
+  .crRow{display:flex;align-items:center;justify-content:center;gap:min(4vw,40px);flex:1;min-height:0;width:100%}
+  .crC{position:relative;flex:none;border-radius:50%;background:#ECE8E1;display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--ink);transition:background .25s,color .25s,box-shadow .25s,transform .25s}
+  .crC .live{position:absolute;inset:0;border-radius:50%;background:var(--accent);opacity:.25;transform:scale(0);transition:transform .06s}
+  .crC span{position:relative}
+  .crC.next{box-shadow:0 0 0 6px var(--accent);animation:crPulse 1.1s infinite}
+  @keyframes crPulse{0%,100%{box-shadow:0 0 0 5px rgba(62,124,107,.9)}50%{box-shadow:0 0 0 12px rgba(62,124,107,.25)}}
+  .crC.done{background:var(--accent);color:#fff;animation:none;box-shadow:none}
+  .crC.soft{background:#E0A83A;color:#fff;animation:none;box-shadow:none}
+  .crC.done .live,.crC.soft .live{display:none}
+  .crGuide{font-size:38px;font-weight:700;letter-spacing:4px}
+  .crStatus{font-size:22px;font-weight:600;min-height:30px;color:var(--soft);text-align:center}
+  .crStatus.ok{color:var(--ok)} .crStatus.warn{color:var(--retry)}
+  @media (max-width:700px) and (orientation:portrait){
+    #crView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    .crGuide{font-size:28px} .crStatus{font-size:18px} .crRow{gap:10px}
+  }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
@@ -331,7 +356,24 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>聲音練習</h1></div></div>
   <div class="secTitle">選一個練習</div>
-  <div class="catBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button></div>
+  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="crStart">聲音漸強</button></div>
+</div>
+<div id="crView" class="hidden">
+  <div class="top"><span id="crName">聲音練習・聲音漸強</span>
+    <div class="gTopR"><button class="levelBtn" id="crLevel"><span data-l="easy">簡單</span><span data-l="hard">困難</span></button></div></div>
+  <div class="pic">
+    <div class="crRow" id="crRow"></div>
+    <div class="crGuide">越唸越大聲</div>
+    <div class="crStatus" id="crStatus">按下麥克風開始</div>
+    <div class="mptLevel" id="crMeter"><i></i><b></b></div>
+  </div>
+  <div class="nav">
+    <button id="crReset"><svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M5 15a8 8 0 102-8.5L4 10"/></svg>重來</button>
+    <button id="crHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
+  </div>
+  <div class="tools">
+    <button class="mic" id="crMic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="crMicLabel">按我開始</span></button>
+  </div>
 </div>
 <div id="glView" class="hidden">
   <div class="top"><span id="glName">聲音練習・滑音往上</span><span></span></div>
@@ -490,7 +532,7 @@ const THEMES = [
   { id: "voice", name: "聲音練習", page: "voiceView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mptView","glView","crView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -1477,6 +1519,116 @@ $("glUpStart").onclick = () => glOpen("up");
 $("glDownStart").onclick = () => glOpen("down");
 $("glReset").onclick = glReset;
 $("glHome").onclick = () => { if(gl.state !== "idle"){ glRelease(); gl.state = "idle"; } showPage("voiceView")   /* 回到聲音練習的選單 */; };
+</script>
+<script>
+// ===================== 聲音練習：聲音漸強 =====================
+// 病人依序唸 1、2、3（困難：到 5），每唸一個數字（一段聲音）就點亮一個圓圈。
+// 用每段聲音的最大音量判斷有沒有比前一個大聲：有＝綠色，沒有＝橘色。
+let cr = { level: store.get("crLevel", "easy"), state: "idle", stream: null, ctx: null, raf: 0, idx: 0, peaks: [] };
+const crN = () => cr.level === "hard" ? 5 : 3;
+function crSizes(){
+  // 圓圈直徑：依畫面大小，數字越大圓越大
+  const n = crN(), box = $("crRow").getBoundingClientRect();
+  const f = Array.from({length: n}, (_, i) => 0.45 + 0.55 * i / (n - 1)), F = f.reduce((a, b) => a + b, 0);
+  const gap = parseFloat(getComputedStyle($("crRow")).columnGap) || 20;
+  const W = (box.width || window.innerWidth - 60) - gap * (n - 1) - 40;   // 留一點空間給外圈的提示光暈
+  const maxD = Math.min((box.height || 300) * 0.85, W / F);
+  return f.map(x => Math.round(maxD * x));
+}
+function crBuild(){
+  const sz = crSizes();
+  $("crRow").innerHTML = sz.map((d, i) => `<div class="crC" style="width:${d}px;height:${d}px;font-size:${Math.round(d * 0.46)}px"><i class="live"></i><span>${i + 1}</span></div>`).join("");
+  $("crLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === cr.level));
+  crMark();
+}
+function crMark(){
+  [...$("crRow").children].forEach((c, i) => {
+    c.classList.toggle("next", cr.state !== "idle" && i === cr.idx);
+    c.classList.remove("done", "soft");
+    if(i < cr.peaks.length) c.classList.add(i === 0 || cr.peaks[i] > cr.peaks[i - 1] * 1.12 ? "done" : "soft");
+    c.querySelector(".live").style.transform = "scale(0)";
+  });
+}
+function crStatus(t, cls){ $("crStatus").textContent = t; $("crStatus").className = "crStatus" + (cls ? " " + cls : ""); }
+function crRelease(){
+  cancelAnimationFrame(cr.raf); cr.raf = 0;
+  if(cr.stream){ cr.stream.getTracks().forEach(t => t.stop()); cr.stream = null; }
+  if(cr.ctx){ try{ cr.ctx.close(); }catch(e){} cr.ctx = null; }
+  $("crMeter").querySelector("i").style.width = "0"; $("crMeter").classList.remove("on");
+  $("crMic").classList.remove("listening");
+}
+function crFinish(){
+  crRelease(); cr.state = "idle"; $("crMicLabel").textContent = "再試一次"; crMark();
+  const n = crN();
+  if(cr.peaks.length < n){ crStatus(cr.peaks.length ? `唸到 ${cr.peaks.length}，再試一次，要唸到 ${n}` : "沒有聽到聲音，請再按一次麥克風"); return; }
+  const ok = cr.peaks.every((p, i) => i === 0 || p > cr.peaks[i - 1] * 1.12);
+  if(ok){ crStatus("很棒！越唸越大聲", "ok"); chime(); }
+  else crStatus("橘色的數字要再大聲一點，再試一次", "warn");
+}
+async function crBegin(){
+  cr.idx = 0; cr.peaks = [];
+  cr.ctx = new (window.AudioContext || window.webkitAudioContext)();
+  try{ cr.ctx.resume(); }catch(e){}
+  try{
+    cr.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  }catch(e){
+    try{ cr.ctx.close(); }catch(e2){} cr.ctx = null;
+    crStatus("無法使用麥克風，請確認 Safari 已允許使用麥克風", "warn"); return;
+  }
+  const ctx = cr.ctx; try{ await ctx.resume(); }catch(e){}
+  const an = ctx.createAnalyser(); an.fftSize = 1024;
+  ctx.createMediaStreamSource(cr.stream).connect(an);
+  const buf = new Float32Array(an.fftSize);
+  const pct = v => Math.max(0, Math.min(100, (20 * Math.log10(Math.max(v, 1e-6)) + 60) / 50 * 100));
+  const recent = []; let thr = 0.006, lv = 0, onSince = 0, offSince = 0, inSeg = false, segStart = 0, segPeak = 0, lastAct = performance.now(), frozen = false;
+  cr.state = "listen"; $("crMic").classList.add("listening"); $("crMicLabel").textContent = "按我停止";
+  crMark(); crStatus("請唸「1」");
+  const loop = () => {
+    if(cr.state === "idle") return;
+    an.getFloatTimeDomainData(buf);
+    let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / buf.length), now = performance.now();
+    if(rms < 1e-5){ cr.raf = requestAnimationFrame(loop); return; }
+    lv = lv ? lv * 0.5 + rms * 0.5 : rms;
+    if(!frozen){   // 第一個數字唸出來之前，持續量環境聲音決定門檻
+      recent.push(rms); if(recent.length > 60) recent.shift();
+      const c = [...recent].sort((a, b) => a - b);
+      thr = Math.min(0.02, Math.max(0.003, c[Math.floor(c.length * 0.2)] * 2.5));
+      if(recent.length < 10){ cr.raf = requestAnimationFrame(loop); return; }
+    }
+    const M = $("crMeter"); M.querySelector("i").style.width = pct(lv) + "%"; M.querySelector("b").style.left = `calc(${pct(thr)}% - 1px)`; M.classList.toggle("on", lv > thr);
+    const cur = $("crRow").children[cr.idx];
+    if(!inSeg){
+      if(lv > thr){ if(!onSince) onSince = now; if(now - onSince > 50){ inSeg = true; frozen = true; segStart = onSince; segPeak = lv; offSince = 0; } }
+      else onSince = 0;
+    }else{
+      segPeak = Math.max(segPeak, lv); lastAct = now;
+      if(cur) cur.querySelector(".live").style.transform = `scale(${Math.min(1, pct(lv) / 100 * 1.3).toFixed(2)})`;   // 唸的時候圓圈裡跟著音量長大
+      if(lv < thr * 0.7){
+        if(!offSince) offSince = now;
+        if(now - offSince > 180){   // 一個數字唸完
+          inSeg = false; onSince = 0;
+          if(offSince - segStart >= 80){
+            cr.peaks.push(segPeak); cr.idx++; crMark();
+            if(cr.idx >= crN()){ crFinish(); return; }
+            const louder = cr.peaks.length < 2 || cr.peaks[cr.peaks.length - 1] > cr.peaks[cr.peaks.length - 2] * 1.12;
+            crStatus(louder ? `很好，接著唸「${cr.idx + 1}」，再大聲一點` : `接著唸「${cr.idx + 1}」，要更大聲喔`, louder ? "" : "warn");
+          }else if(cur) cur.querySelector(".live").style.transform = "scale(0)";
+        }
+      }else offSince = 0;
+    }
+    if(now - lastAct > 15000){ crFinish(); return; }   // 太久沒聲音就結束
+    cr.raf = requestAnimationFrame(loop);
+  };
+  loop();
+}
+function crReset(){ if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } cr.idx = 0; cr.peaks = []; crBuild(); $("crMicLabel").textContent = "按我開始"; crStatus("按下麥克風開始"); }
+$("crMic").onclick = () => { if(cr.state === "idle") crBegin(); else crFinish(); };
+$("crLevel").onclick = () => { cr.level = cr.level === "easy" ? "hard" : "easy"; store.set("crLevel", cr.level); crReset(); };
+$("crStart").onclick = () => { showPage("crView"); crReset(); };
+$("crReset").onclick = crReset;
+$("crHome").onclick = () => { if(cr.state !== "idle"){ crRelease(); cr.state = "idle"; } showPage("voiceView"); };
+window.addEventListener("resize", () => { if(!$("crView").classList.contains("hidden")) { const keep = cr.peaks.length; crBuild(); } });
 </script>
 </body>
 </html>
