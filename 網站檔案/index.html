@@ -1522,10 +1522,13 @@ $("glHome").onclick = () => { if(gl.state !== "idle"){ glRelease(); gl.state = "
 </script>
 <script>
 // ===================== 聲音練習：聲音漸強 =====================
-// 病人依序唸 1、2、3（困難：到 5），每唸一個數字（一段聲音）就點亮一個圓圈。
-// 用每段聲音的最大音量判斷有沒有比前一個大聲：有＝綠色，沒有＝橘色。
+// 病人連續唸 1、2、3（困難：到 5），字和字之間不需要停頓。
+// 每個字的音量會「先變大、再變小」，用這個起伏找出每個字的最大音量（字和字之間的小凹陷就是分界）。
+// 一開口就點亮 1；之後只要某個字比目前亮著的那個字再大聲約 1.5 分貝（×1.18），就跳到下一個圓圈。
+// 下一個圓圈裡的淡綠色＝離「夠大聲」還差多少，填滿就會跳格。
 let cr = { level: store.get("crLevel", "easy"), state: "idle", stream: null, ctx: null, raf: 0, idx: 0, peaks: [] };
 const crN = () => cr.level === "hard" ? 5 : 3;
+const CR_STEP = 1.18, CR_DIP = 1.15;   // CR_STEP：大聲約 1.5 分貝就跳格；CR_DIP：音量掉約 1.2 分貝算一個字結束
 function crSizes(){
   // 圓圈直徑：依畫面大小，數字越大圓越大
   const n = crN(), box = $("crRow").getBoundingClientRect();
@@ -1545,7 +1548,7 @@ function crMark(){
   [...$("crRow").children].forEach((c, i) => {
     c.classList.toggle("next", cr.state !== "idle" && i === cr.idx);
     c.classList.remove("done", "soft");
-    if(i < cr.peaks.length) c.classList.add(i === 0 || cr.peaks[i] > cr.peaks[i - 1] * 1.12 ? "done" : "soft");
+    if(i < cr.idx) c.classList.add("done");
     c.querySelector(".live").style.transform = "scale(0)";
   });
 }
@@ -1560,10 +1563,9 @@ function crRelease(){
 function crFinish(){
   crRelease(); cr.state = "idle"; $("crMicLabel").textContent = "再試一次"; crMark();
   const n = crN();
-  if(cr.peaks.length < n){ crStatus(cr.peaks.length ? `唸到 ${cr.peaks.length}，再試一次，要唸到 ${n}` : "沒有聽到聲音，請再按一次麥克風"); return; }
-  const ok = cr.peaks.every((p, i) => i === 0 || p > cr.peaks[i - 1] * 1.12);
-  if(ok){ crStatus("很棒！越唸越大聲", "ok"); chime(); }
-  else crStatus("橘色的數字要再大聲一點，再試一次", "warn");
+  if(cr.idx >= n){ crStatus("很棒！越唸越大聲", "ok"); chime(); }
+  else if(cr.idx === 0) crStatus("沒有聽到聲音，請再按一次麥克風");
+  else crStatus(`跳到「${cr.idx}」，後面要越唸越大聲才會跳格，再試一次`, "warn");
 }
 async function crBegin(){
   cr.idx = 0; cr.peaks = [];
@@ -1576,48 +1578,74 @@ async function crBegin(){
     crStatus("無法使用麥克風，請確認 Safari 已允許使用麥克風", "warn"); return;
   }
   const ctx = cr.ctx; try{ await ctx.resume(); }catch(e){}
-  const an = ctx.createAnalyser(); an.fftSize = 1024;
+  const an = ctx.createAnalyser(); an.fftSize = 4096;
   ctx.createMediaStreamSource(cr.stream).connect(an);
   const buf = new Float32Array(an.fftSize);
   const pct = v => Math.max(0, Math.min(100, (20 * Math.log10(Math.max(v, 1e-6)) + 60) / 50 * 100));
-  const recent = []; let thr = 0.006, lv = 0, onSince = 0, offSince = 0, inSeg = false, segStart = 0, segPeak = 0, lastAct = performance.now(), frozen = false;
+  const BLK = 256, blkMs = BLK / ctx.sampleRate * 1000;   // 把聲音切成很短的小段（約 6 毫秒）逐段分析，iPad 忙的時候也不會漏掉字和字之間的凹陷
+  const recent = []; let thr = 0.006, lv = 0, onSince = 0, quietSince = 0, frozen = false, lastT = 0;
+  let litPeak = 0, rising = true, segMax = 0, segMin = 0, lastLit = 0, early = false;   // litPeak＝目前亮著那格的字的音量；early＝這個字還沒唸完就先跳格了
+  const t0 = performance.now();
   cr.state = "listen"; $("crMic").classList.add("listening"); $("crMicLabel").textContent = "按我停止";
-  crMark(); crStatus("請唸「1」");
+  crMark(); crStatus("從「1」開始，連續唸，越唸越大聲");
+  const step = (now, peak) => {   // 點亮目前的圓圈，跳到下一個
+    cr.peaks.push(peak); cr.idx++; lastLit = now; crMark();
+    if(cr.idx < crN()) crStatus(cr.idx === 1 ? "很好！接著唸，越來越大聲" : "很好！再大聲一點");
+  };
+  const onWord = (peak, now) => {   // 找到一個字的最大音量
+    if(!litPeak){ litPeak = peak; cr.peaks[0] = peak; return; }   // 第 1 個字
+    if(early){ litPeak = Math.max(litPeak, peak); cr.peaks[cr.peaks.length - 1] = litPeak; early = false; return; }   // 先跳格的那個字：用它真正的最大音量
+    if(cr.idx < crN() && peak > litPeak * CR_STEP){ litPeak = peak; step(now, peak); }
+    else if(cr.idx < crN()) crStatus("再大聲一點！", "warn");
+  };
+  // 每一小段聲音都跑一次：找字的高峰、判斷要不要跳格
+  const track = (v, t) => {
+    const n = crN();
+    if(cr.idx === 0){
+      if(v > thr){ if(!onSince) onSince = t; if(t - onSince > 60){ frozen = true; step(t, v); rising = true; segMax = v; } }   // 1：一開口就點亮
+      else onSince = 0;
+      return;
+    }
+    // 音量往上時記最大值，掉下來一點就算這個字結束
+    if(rising){
+      segMax = Math.max(segMax, v);
+      if(v < segMax / CR_DIP){ onWord(segMax, t); rising = false; segMin = v; }
+    }else{
+      segMin = Math.min(segMin, v);
+      if(v > segMin * CR_DIP && v > thr){ rising = true; segMax = v; }
+    }
+    // 正在唸的這個字，如果已經比 litPeak 大聲很多，不用等它結束就先跳格（反應比較快）
+    if(rising && !early && litPeak && cr.idx < n && segMax > litPeak * CR_STEP * 1.15){ litPeak = segMax; early = true; step(t, segMax); }
+    if(v < thr * 0.7){ if(!quietSince) quietSince = t; } else quietSince = 0;
+  };
   const loop = () => {
     if(cr.state === "idle") return;
     an.getFloatTimeDomainData(buf);
-    let sum = 0; for(let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
-    const rms = Math.sqrt(sum / buf.length), now = performance.now();
-    if(rms < 1e-5){ cr.raf = requestAnimationFrame(loop); return; }
-    lv = lv ? lv * 0.5 + rms * 0.5 : rms;
-    if(!frozen){   // 第一個數字唸出來之前，持續量環境聲音決定門檻
+    const now = performance.now(), L = buf.length;
+    let sum = 0; for(let i = L - 1024; i < L; i++) sum += buf[i] * buf[i];
+    const rms = Math.sqrt(sum / 1024);
+    if(rms < 1e-5){ lastT = now; cr.raf = requestAnimationFrame(loop); return; }
+    if(!frozen){   // 開口之前，持續量環境聲音決定門檻
       recent.push(rms); if(recent.length > 60) recent.shift();
       const c = [...recent].sort((a, b) => a - b);
       thr = Math.min(0.02, Math.max(0.003, c[Math.floor(c.length * 0.2)] * 2.5));
-      if(recent.length < 10){ cr.raf = requestAnimationFrame(loop); return; }
+      if(recent.length < 10){ lastT = now; lv = rms; cr.raf = requestAnimationFrame(loop); return; }
     }
+    // 這一格畫面和上一格之間新進來的小段，依時間順序處理
+    const nb = Math.max(1, Math.min(L / BLK, Math.round((now - (lastT || now - 16)) / blkMs)));
+    for(let k = nb - 1; k >= 0; k--){
+      const e = L - k * BLK; let s2 = 0; for(let i = e - BLK; i < e; i++) s2 += buf[i] * buf[i];
+      lv = lv * 0.75 + Math.sqrt(s2 / BLK) * 0.25;
+      track(lv, now - k * blkMs);
+      if(cr.state === "idle") return;
+    }
+    lastT = now;
     const M = $("crMeter"); M.querySelector("i").style.width = pct(lv) + "%"; M.querySelector("b").style.left = `calc(${pct(thr)}% - 1px)`; M.classList.toggle("on", lv > thr);
-    const cur = $("crRow").children[cr.idx];
-    if(!inSeg){
-      if(lv > thr){ if(!onSince) onSince = now; if(now - onSince > 50){ inSeg = true; frozen = true; segStart = onSince; segPeak = lv; offSince = 0; } }
-      else onSince = 0;
-    }else{
-      segPeak = Math.max(segPeak, lv); lastAct = now;
-      if(cur) cur.querySelector(".live").style.transform = `scale(${Math.min(1, pct(lv) / 100 * 1.3).toFixed(2)})`;   // 唸的時候圓圈裡跟著音量長大
-      if(lv < thr * 0.7){
-        if(!offSince) offSince = now;
-        if(now - offSince > 180){   // 一個數字唸完
-          inSeg = false; onSince = 0;
-          if(offSince - segStart >= 80){
-            cr.peaks.push(segPeak); cr.idx++; crMark();
-            if(cr.idx >= crN()){ crFinish(); return; }
-            const louder = cr.peaks.length < 2 || cr.peaks[cr.peaks.length - 1] > cr.peaks[cr.peaks.length - 2] * 1.12;
-            crStatus(louder ? `很好，接著唸「${cr.idx + 1}」，再大聲一點` : `接著唸「${cr.idx + 1}」，要更大聲喔`, louder ? "" : "warn");
-          }else if(cur) cur.querySelector(".live").style.transform = "scale(0)";
-        }
-      }else offSince = 0;
-    }
-    if(now - lastAct > 15000){ crFinish(); return; }   // 太久沒聲音就結束
+    const n = crN(), next = $("crRow").children[cr.idx];
+    if(next && litPeak){ const need = litPeak * CR_STEP; next.querySelector(".live").style.transform = `scale(${Math.max(0, Math.min(1, (lv - thr) / (need - thr))).toFixed(2)})`; }
+    if(cr.idx === 0 && now - t0 > 20000){ crFinish(); return; }
+    if(cr.idx >= n && now - lastLit > 500){ crFinish(); return; }   // 最後一格亮了，稍等一下就結束
+    if(cr.idx > 0 && quietSince && now - quietSince > 800){ crFinish(); return; }   // 停下來就結束
     cr.raf = requestAnimationFrame(loop);
   };
   loop();
