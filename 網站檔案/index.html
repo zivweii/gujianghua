@@ -1229,8 +1229,8 @@ $("lMenu").onclick = () => showPage(lFunc ? "flSetupView" : "listenSetupView");
 $("lAgain").onclick = () => lFunc ? startFunc("l", lCat.id ? FUNC_DATA.find(c => c.id === lCat.id) : null) : startListen(lCat.id ? DATA.find(c => c.id === lCat.id) : null);
 $("lLevel").onclick = () => { lLevel = lLevel === "easy" ? "hard" : "easy"; store.set("lLevel", lLevel); lRenderHint(); speak(lPrompt()); };
 $("lVoice").onclick = () => speak(lPrompt());   // 再唸一次題目
-// 整句朗讀（功能性）：簡單、困難都唸「可以用來＿＿的＋答案」，例如「可以用來叉東西的叉子」
-$("lReadAll").onclick = () => { const t = lTarget(); speak(`可以用來${t.answer}的${t.name}`); };
+// 整句朗讀（功能性）：簡單「可以洗餐具的洗碗精」、困難「可以用來洗餐具的洗碗精」
+$("lReadAll").onclick = () => { const t = lTarget(); speak(`${lLevel === "hard" ? "可以用來" : "可以"}${t.answer}的${t.name}`); };
 $("lText").onclick = () => { lTextStep = lFunc ? 2 : Math.min(lTextStep + 1, 2); lRenderHint(); };
 </script>
 <script>
