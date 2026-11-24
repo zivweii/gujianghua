@@ -391,6 +391,7 @@
     <button id="lHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
   </div>
   <div class="tools">
+    <button class="tool hidden" id="lReadAll"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 10h10M4 14h6"/><path d="M15 13l3-2v8l-3-2h-2v-4z"/><path d="M20.5 12.5a3 3 0 010 3"/></svg>整句朗讀</button>
     <button class="tool" id="lVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
     <button class="tool" id="lText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
   </div>
@@ -542,6 +543,7 @@
     <button id="rHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
   </div>
   <div class="tools">
+    <button class="tool hidden" id="rReadAll"><svg viewBox="0 0 24 24"><path d="M4 6h10M4 10h10M4 14h6"/><path d="M15 13l3-2v8l-3-2h-2v-4z"/><path d="M20.5 12.5a3 3 0 010 3"/></svg>整句朗讀</button>
     <button class="tool" id="rVoice"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg>語音提示</button>
     <button class="tool" id="rText"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M12 6v13"/><path d="M8 19h8"/></svg>文字提示</button>
   </div>
@@ -1188,6 +1190,7 @@ function lRenderHint(){
 }
 function lShow(){
   speechSynthesis.cancel();
+  $("lReadAll").classList.toggle("hidden", !lFunc);   // 只有功能性詞彙聽理解才有整句朗讀
   lTextStep = 0; lDoneRound = false;
   $("lDone").classList.add("hidden");
   const r = lRounds[lPos];
@@ -1226,6 +1229,8 @@ $("lMenu").onclick = () => showPage(lFunc ? "flSetupView" : "listenSetupView");
 $("lAgain").onclick = () => lFunc ? startFunc("l", lCat.id ? FUNC_DATA.find(c => c.id === lCat.id) : null) : startListen(lCat.id ? DATA.find(c => c.id === lCat.id) : null);
 $("lLevel").onclick = () => { lLevel = lLevel === "easy" ? "hard" : "easy"; store.set("lLevel", lLevel); lRenderHint(); speak(lPrompt()); };
 $("lVoice").onclick = () => speak(lPrompt());   // 再唸一次題目
+// 整句朗讀（功能性）：簡單、困難都唸「可以用來＿＿的＋答案」，例如「可以用來叉東西的叉子」
+$("lReadAll").onclick = () => { const t = lTarget(); speak(`可以用來${t.answer}的${t.name}`); };
 $("lText").onclick = () => { lTextStep = lFunc ? 2 : Math.min(lTextStep + 1, 2); lRenderHint(); };
 </script>
 <script>
@@ -1274,10 +1279,13 @@ function rRenderHint(){
   const w = rLabel(rTarget());
   if(rTextStep === 0 && !rDoneRound){ $("rHint").innerHTML = ""; return; }
   const first = w[0] + "＿".repeat(w.length - 1);
+  // 功能性答對後：綠色的用途＋黑色的物品名，例如「洗澡的沐浴乳」「可以用來洗澡的沐浴乳」
+  if(rFunc && rDoneRound){ $("rHint").innerHTML = `<span class="blank">${w}</span>${rTarget().name}`; return; }
   $("rHint").innerHTML = `<span class="blank">${(rFunc || rTextStep >= 2 || rDoneRound) ? w : first}</span>`;   // 功能性：按一次就顯示整個詞
 }
 function rShow(){
   speechSynthesis.cancel();
+  $("rReadAll").classList.toggle("hidden", !rFunc);   // 只有功能性詞彙讀理解才有整句朗讀
   rTextStep = 0; rDoneRound = false;
   $("rDone").classList.add("hidden");
   const r = rRounds[rPos];
@@ -1319,6 +1327,8 @@ $("rMenu").onclick = () => showPage(rFunc ? "frSetupView" : "readSetupView");
 $("rAgain").onclick = () => rFunc ? startFunc("r", rCat.id ? FUNC_DATA.find(c => c.id === rCat.id) : null) : startRead(rCat.id ? DATA.find(c => c.id === rCat.id) : null);
 $("rLevel").onclick = () => { rLevel = rLevel === "easy" ? "hard" : "easy"; store.set("rLevel", rLevel); rShow(); };
 $("rVoice").onclick = () => speak(rLabel(rTarget()));   // 唸出題目
+// 整句朗讀（功能性）：簡單「洗澡的沐浴乳」、困難「可以用來洗澡的沐浴乳」
+$("rReadAll").onclick = () => speak(rLabel(rTarget()) + rTarget().name);
 $("rText").onclick = () => { rTextStep = Math.min(rTextStep + 1, 2); rRenderHint(); };
 </script>
 <script>
