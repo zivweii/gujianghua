@@ -214,8 +214,17 @@
   #rmView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
   #rmView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;min-height:0}
   #rmView .tools{grid-area:tools}
-  .rmStage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
+  .rmStage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;gap:24px}
   .rmStage svg{height:100%;max-height:48vh;width:auto;max-width:100%}
+  .rmShow{flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:center}
+  .rmModes{display:flex;flex-direction:column;gap:12px;flex:none}
+  .rmModes button{width:120px;height:64px;font-size:22px;font-weight:700;color:var(--accent);border:3px solid var(--line);border-radius:18px}
+  .rmModes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .rmCard{width:min(44vh,360px);height:min(44vh,360px);border-radius:32px;background:#F4EEE4;display:flex;align-items:center;justify-content:center}
+  .rmCard span{font-size:min(28vh,220px);font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .rmCard span.pop{animation:rmPop .25s ease-out}
+  @keyframes rmPop{0%{transform:scale(1.18);color:var(--accent)}100%{transform:scale(1)}}
+  @media (max-width:700px) and (orientation:portrait){ .rmStage{flex-direction:column;gap:10px} .rmModes{flex-direction:row;width:100%} .rmModes button{width:auto;flex:1;height:52px;font-size:18px;white-space:nowrap} .rmCard{width:60vw;height:60vw} .rmCard span{font-size:36vw} }
   .rmBpm{display:flex;align-items:baseline;gap:10px}
   .rmBpm b{font-size:64px;line-height:1;font-variant-numeric:tabular-nums}
   .rmBpm span{font-size:18px;color:var(--soft)}
@@ -421,7 +430,8 @@
   <div class="top"><span>聲音練習・節奏練習</span><span></span></div>
   <div class="pic">
     <div class="rmStage">
-      <svg viewBox="0 0 400 460" aria-label="節拍器">
+      <div class="rmShow">
+      <svg id="rmMetro" viewBox="0 0 400 460" aria-label="節拍器">
         <defs>
           <linearGradient id="rmBody" x1="0" x2="1"><stop offset="0" stop-color="#F3E6D3"/><stop offset=".55" stop-color="#E9D6BA"/><stop offset="1" stop-color="#D9C19F"/></linearGradient>
         </defs>
@@ -437,6 +447,9 @@
         </g>
         <circle cx="200" cy="370" r="16" fill="#3C3833"/>
       </svg>
+        <div class="rmCard hidden" id="rmCard"><span id="rmItem">1</span></div>
+      </div>
+      <div class="rmModes" id="rmModes"><button data-m="metro">節拍器</button><button data-m="num">數字</button><button data-m="zodiac">生肖</button></div>
     </div>
     <div class="rmBpm"><b id="rmBpmNum">60</b><span>每分鐘拍數（BPM）</span></div>
     <div class="rmCtl"><button id="rmMinus" aria-label="減慢">−</button><input type="range" id="rmSlider" min="40" max="90" step="1" value="60"><button id="rmPlus" aria-label="加快">＋</button></div>
@@ -1891,6 +1904,24 @@ $("mxHome").onclick = () => { if(mx.state !== "idle"){ mxRelease(); mx.state = "
 // 鐘擺每一拍擺到一邊，擺到最邊邊時發出「答」的一聲。速度 40～90 BPM。
 let rm = { bpm: Math.min(90, Math.max(40, store.get("rmBpm", 60))), on: false, ctx: null, t0: 0, next: 0, beat: 0, raf: 0, timer: 0 };
 const RM_A = 28;   // 鐘擺最大角度
+// 顯示模式：節拍器／數字（1→10→1 來回）／生肖（鼠→豬），數字和生肖每一拍換一個
+const RM_SEQ = {
+  num: [1,2,3,4,5,6,7,8,9,10,9,8,7,6,5,4,3,2],   // 循環下去就是 1…10…1…10
+  zodiac: ["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"]
+};
+rm.mode = store.get("rmMode", "metro"); rm.shown = -1; rm.off = 0;   // off：切換模式時從第一個重新開始
+function rmSetMode(m){
+  rm.mode = m; store.set("rmMode", m);
+  [...$("rmModes").children].forEach(b => b.classList.toggle("on", b.dataset.m === m));
+  $("rmMetro").classList.toggle("hidden", m !== "metro"); $("rmCard").classList.toggle("hidden", m === "metro");
+  rm.off = rm.on ? rmCurBeat() : 0; rm.shown = -1; rmShowItem(rm.on ? rmCurBeat() : 0);
+}
+function rmCurBeat(){ return rm.ctx ? Math.max(0, Math.floor((rm.ctx.currentTime - rm.t0) * rm.bpm / 60 + 0.01)) : 0; }
+function rmShowItem(k){   // 第 k 拍顯示的數字或生肖
+  const seq = RM_SEQ[rm.mode]; if(!seq || k === rm.shown) return;
+  rm.shown = k; const el = $("rmItem"); el.textContent = seq[Math.max(0, k - rm.off) % seq.length];
+  el.classList.remove("pop"); void el.offsetWidth; if(rm.on) el.classList.add("pop");
+}
 function rmSetBpm(v){
   const old = rm.bpm;
   rm.bpm = Math.min(90, Math.max(40, Math.round(v)));
@@ -1916,18 +1947,20 @@ function rmAnimate(){
   const phase = (rm.ctx.currentTime - rm.t0) * rm.bpm / 60;   // 第幾拍（小數）
   const ang = RM_A * Math.cos(Math.PI * phase);               // 拍子正好在左右兩端
   $("rmPend").setAttribute("transform", `rotate(${ang.toFixed(2)} 200 370)`);
+  if(rm.mode !== "metro") rmShowItem(rmCurBeat());   // 跟著拍子換下一個
   rm.raf = requestAnimationFrame(rmAnimate);
 }
 function rmStart(){
   rm.ctx = rm.ctx || new (window.AudioContext || window.webkitAudioContext)();
   try{ rm.ctx.resume(); }catch(e){}
-  rm.on = true; rm.t0 = rm.ctx.currentTime + 0.1; rm.beat = 0; rm.next = rm.t0;
+  rm.on = true; rm.t0 = rm.ctx.currentTime + 0.1; rm.beat = 0; rm.next = rm.t0; rm.shown = -1; rm.off = 0;
   rmSchedule(); rm.timer = setInterval(rmSchedule, 40); rmAnimate();
   $("rmPlay").classList.add("listening"); $("rmPlayLabel").textContent = "暫停";
   $("rmIcon").innerHTML = '<rect x="7" y="5" width="3.5" height="14" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" fill="currentColor"/>';
 }
 function rmStop(){
   rm.on = false; clearInterval(rm.timer); cancelAnimationFrame(rm.raf);
+  rm.shown = -1; rm.off = 0; rmShowItem(0);   // 停下來時回到第一個
   $("rmPend").setAttribute("transform", `rotate(0 200 370)`);
   $("rmPlay").classList.remove("listening"); $("rmPlayLabel").textContent = "開始";
   $("rmIcon").innerHTML = '<path d="M8 5l11 7-11 7z" fill="currentColor"/>';
@@ -1936,7 +1969,8 @@ $("rmPlay").onclick = () => rm.on ? rmStop() : rmStart();
 $("rmMinus").onclick = () => rmSetBpm(rm.bpm - 1);
 $("rmPlus").onclick = () => rmSetBpm(rm.bpm + 1);
 $("rmSlider").oninput = e => rmSetBpm(+e.target.value);
-$("rmStart").onclick = () => { rmSetBpm(rm.bpm); rmStop(); showPage("rmView"); };
+$("rmModes").onclick = e => { const b = e.target.closest("button"); if(b) rmSetMode(b.dataset.m); };
+$("rmStart").onclick = () => { rmSetBpm(rm.bpm); rmStop(); rmSetMode(rm.mode); showPage("rmView"); };
 $("rmHome").onclick = () => { rmStop(); showPage("voiceView"); };
 </script>
 </body>
