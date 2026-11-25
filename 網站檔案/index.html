@@ -1287,13 +1287,17 @@ async function startRead(c, btn){
   rShow();
 }
 const rTarget = () => rRounds[rPos].opts[rRounds[rPos].target];
-let rLevel = store.get("rLevel", "easy");   // 功能性詞彙讀理解的簡單/困難
-const rLabel = it => !rFunc ? it.name : (rLevel === "hard" ? `可以用來${it.answer}的` : it.answer + "的");   // 按鈕上的字
+let rLevel = store.get("rLevel", "easy");     // 功能性詞彙讀理解的簡單/困難
+let rvLevel = store.get("rvLevel", "easy");   // 詞彙讀理解的簡單/困難（困難：「這是苦瓜」）
+const rLv = () => rFunc ? rLevel : rvLevel;
+const rLabel = it => !rFunc ? (rvLevel === "hard" ? `這是${it.name}` : it.name) : (rLevel === "hard" ? `可以用來${it.answer}的` : it.answer + "的");   // 按鈕上的字
 function rSay(cls, html){ $("rFeedback").className = "feedback " + cls; $("rFeedback").innerHTML = html; }
 function rRenderHint(){
   const w = rLabel(rTarget());
   if(rTextStep === 0 && !rDoneRound){ $("rHint").innerHTML = ""; return; }
-  const first = w[0] + "＿".repeat(w.length - 1);
+  if(!rFunc && rDoneRound){ $("rHint").innerHTML = ""; return; }   // 詞彙讀理解答對後：圖片下方不再顯示文字，只顯示「答對了！」
+  const pre = (!rFunc && rvLevel === "hard") ? "這是" : "", core = w.slice(pre.length);
+  const first = pre + core[0] + "＿".repeat(core.length - 1);
   // 功能性答對後：綠色的用途＋黑色的物品名，例如「洗澡的沐浴乳」「可以用來洗澡的沐浴乳」
   if(rFunc && rDoneRound){ $("rHint").innerHTML = `<span class="blank">${w}</span>${rTarget().name}`; return; }
   $("rHint").innerHTML = `<span class="blank">${(rFunc || rTextStep >= 2 || rDoneRound) ? w : first}</span>`;   // 功能性：按一次就顯示整個詞
@@ -1305,9 +1309,9 @@ function rShow(){
   $("rDone").classList.add("hidden");
   const r = rRounds[rPos];
   $("rPhoto").src = rTarget().img;
-  $("rLevel").classList.toggle("hidden", !rFunc);
-  $("rLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === rLevel));
-  const long = rFunc && rLevel === "hard";
+  $("rLevel").classList.remove("hidden");
+  $("rLevel").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === rLv()));
+  const long = rLv() === "hard";
   $("readView").classList.toggle("longWords", long);
   $("rWords").innerHTML = r.opts.map((it, i) => `<button class="wordBtn${long ? " long" : ""}" data-i="${i}">${rLabel(it)}</button>`).join("");
   [...$("rWords").children].forEach(b => b.onclick = () => rPick(+b.dataset.i, b));
@@ -1340,7 +1344,11 @@ $("rNext").onclick = () => { if(rPos < ROUNDS-1){ rPos++; rShow(); } else rFinis
 $("rHome").onclick = () => { speechSynthesis.cancel(); showPage(rFunc ? "frSetupView" : "readSetupView"); };
 $("rMenu").onclick = () => showPage(rFunc ? "frSetupView" : "readSetupView");
 $("rAgain").onclick = () => rFunc ? startFunc("r", rCat.id ? FUNC_DATA.find(c => c.id === rCat.id) : null) : startRead(rCat.id ? DATA.find(c => c.id === rCat.id) : null);
-$("rLevel").onclick = () => { rLevel = rLevel === "easy" ? "hard" : "easy"; store.set("rLevel", rLevel); rShow(); };
+$("rLevel").onclick = () => {
+  if(rFunc){ rLevel = rLevel === "easy" ? "hard" : "easy"; store.set("rLevel", rLevel); }
+  else { rvLevel = rvLevel === "easy" ? "hard" : "easy"; store.set("rvLevel", rvLevel); }
+  rShow();
+};
 $("rVoice").onclick = () => speak(rLabel(rTarget()));   // 唸出題目
 // 整句朗讀（功能性）：簡單「洗澡的沐浴乳」、困難「可以用來洗澡的沐浴乳」
 $("rReadAll").onclick = () => speak(rLabel(rTarget()) + rTarget().name);
