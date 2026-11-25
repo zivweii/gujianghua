@@ -217,14 +217,16 @@
   .rmStage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;gap:24px}
   .rmStage svg{height:100%;max-height:48vh;width:auto;max-width:100%}
   .rmShow{flex:1;min-width:0;height:100%;display:flex;align-items:center;justify-content:center}
-  .rmModes{display:flex;flex-direction:column;gap:12px;flex:none}
+  .rmModes{display:flex;flex-direction:column;gap:12px;flex:none;position:absolute;right:0;top:50%;transform:translateY(-50%)}   /* 按鈕浮在右邊，字和節拍器在白框正中間 */
+  #rmView .rmStage{position:relative}
   .rmModes button{width:120px;height:64px;font-size:22px;font-weight:700;color:var(--accent);border:3px solid var(--line);border-radius:18px}
   .rmModes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-  .rmCard{width:min(44vh,360px);height:min(44vh,360px);border-radius:32px;background:#F4EEE4;display:flex;align-items:center;justify-content:center}
+  .rmCard{width:min(60vw,560px);height:min(44vh,360px);display:flex;align-items:center;justify-content:center}
   .rmCard span{font-size:min(28vh,220px);font-weight:700;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums}
+  .rmCard span.long{font-size:min(12vh,96px);color:var(--accent)}
   .rmCard span.pop{animation:rmPop .25s ease-out}
   @keyframes rmPop{0%{transform:scale(1.18);color:var(--accent)}100%{transform:scale(1)}}
-  @media (max-width:700px) and (orientation:portrait){ .rmStage{flex-direction:column;gap:10px} .rmModes{flex-direction:row;width:100%} .rmModes button{width:auto;flex:1;height:52px;font-size:18px;white-space:nowrap} .rmCard{width:60vw;height:60vw} .rmCard span{font-size:36vw} }
+  @media (max-width:700px) and (orientation:portrait){ .rmCard span.long{font-size:14vw} .rmStage{flex-direction:column;gap:10px} .rmModes{flex-direction:row;width:100%;position:static;transform:none} .rmModes button{width:auto;flex:1;height:52px;font-size:18px;white-space:nowrap} .rmCard{width:60vw;height:60vw} .rmCard span{font-size:36vw} }
   .rmBpm{display:flex;align-items:baseline;gap:10px}
   .rmBpm b{font-size:64px;line-height:1;font-variant-numeric:tabular-nums}
   .rmBpm span{font-size:18px;color:var(--soft)}
@@ -1906,8 +1908,8 @@ let rm = { bpm: Math.min(90, Math.max(40, store.get("rmBpm", 60))), on: false, c
 const RM_A = 28;   // 鐘擺最大角度
 // 顯示模式：節拍器／數字（1→10→1 來回）／生肖（鼠→豬），數字和生肖每一拍換一個
 const RM_SEQ = {
-  num: [1,2,3,4,5,6,7,8,9,10,9,8,7,6,5,4,3,2],   // 循環下去就是 1…10…1…10
-  zodiac: ["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"]
+  num: [1,2,3,4,5,6,7,8,9,10,10,9,8,7,6,5,4,3,2,1,"再來一次"],
+  zodiac: ["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬","再來一次"]
 };
 rm.mode = store.get("rmMode", "metro"); rm.shown = -1; rm.off = 0;   // off：切換模式時從第一個重新開始
 function rmSetMode(m){
@@ -1919,7 +1921,7 @@ function rmSetMode(m){
 function rmCurBeat(){ return rm.ctx ? Math.max(0, Math.floor((rm.ctx.currentTime - rm.t0) * rm.bpm / 60 + 0.01)) : 0; }
 function rmShowItem(k){   // 第 k 拍顯示的數字或生肖
   const seq = RM_SEQ[rm.mode]; if(!seq || k === rm.shown) return;
-  rm.shown = k; const el = $("rmItem"); el.textContent = seq[Math.max(0, k - rm.off) % seq.length];
+  rm.shown = k; const el = $("rmItem"), v = seq[Math.max(0, k - rm.off) % seq.length]; el.textContent = v; el.classList.toggle("long", String(v).length > 2);   // 「再來一次」字小一點、綠色
   el.classList.remove("pop"); void el.offsetWidth; if(rm.on) el.classList.add("pop");
 }
 function rmSetBpm(v){
