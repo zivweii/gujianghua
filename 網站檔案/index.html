@@ -1996,7 +1996,7 @@ $("mxHome").onclick = () => { if(mx.state !== "idle"){ mxRelease(); mx.state = "
 // 鐘擺每一拍擺到一邊，擺到最邊邊時發出「答」的一聲。速度 40～90 BPM。
 let rm = { bpm: Math.min(90, Math.max(40, store.get("rmBpm", 60))), on: false, ctx: null, t0: 0, next: 0, beat: 0, raf: 0, timer: 0 };
 const RM_A = 28;   // 鐘擺最大角度
-// 顯示模式：節拍器／數字（1→10→1 來回）／生肖（鼠→豬），數字和生肖每一拍換一個
+// 顯示模式：節拍器／數字（1→10→1 來回）／生肖（鼠→豬），數字和生肖每一拍換一個；開始時先「預備」「開始」兩拍
 const RM_SEQ = {
   num: [1,2,3,4,5,6,7,8,9,10,10,9,8,7,6,5,4,3,2,1,"再來一次"],
   zodiac: ["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬","再來一次"]
@@ -2011,7 +2011,9 @@ function rmSetMode(m){
 function rmCurBeat(){ return rm.ctx ? Math.max(0, Math.floor((rm.ctx.currentTime - rm.t0) * rm.bpm / 60 + 0.01)) : 0; }
 function rmShowItem(k){   // 第 k 拍顯示的數字或生肖
   const seq = RM_SEQ[rm.mode]; if(!seq || k === rm.shown) return;
-  rm.shown = k; const el = $("rmItem"), v = seq[Math.max(0, k - rm.off) % seq.length]; el.textContent = v; el.classList.toggle("long", String(v).length > 2);   // 「再來一次」字小一點、綠色
+  // 前兩拍先抓拍子：第一拍「預備」、第二拍「開始」，第三拍才開始出題（停止時顯示「預備」）
+  const i = Math.max(0, k - rm.off);
+  rm.shown = k; const el = $("rmItem"), v = i < 2 ? ["預備","開始"][i] : seq[(i - 2) % seq.length]; el.textContent = v; el.classList.toggle("long", String(v).length > 2);   // 「再來一次」字小一點、綠色
   el.classList.remove("pop"); void el.offsetWidth; if(rm.on) el.classList.add("pop");
 }
 function rmSetBpm(v){
@@ -2052,7 +2054,7 @@ function rmStart(){
 }
 function rmStop(){
   rm.on = false; clearInterval(rm.timer); cancelAnimationFrame(rm.raf);
-  rm.shown = -1; rm.off = 0; rmShowItem(0);   // 停下來時回到第一個
+  rm.shown = -1; rm.off = 0; rmShowItem(0);   // 停下來時回到「預備」
   $("rmPend").setAttribute("transform", `rotate(0 200 370)`);
   $("rmPlay").classList.remove("listening"); $("rmPlayLabel").textContent = "開始";
   $("rmIcon").innerHTML = '<path d="M8 5l11 7-11 7z" fill="currentColor"/>';
