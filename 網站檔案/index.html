@@ -2255,8 +2255,8 @@ function auRender(){
 function auSetBpm(v){
   const old = au.bpm;
   au.bpm = Math.min(90, Math.max(40, Math.round(v))); store.set("auBpm", au.bpm); auRender();
-  if(au.on && old !== au.bpm && au.ctx){   // 播放中改速度：從目前位置接著算
-    const now = au.ctx.currentTime, phase = (now - au.t0) * old / 60;
+  if(au.on && old !== au.bpm){   // 播放中改速度：從目前位置接著算
+    const now = auNow(), phase = (now - au.t0) * old / 60;
     au.t0 = now - phase * 60 / au.bpm; au.next = au.t0 + Math.ceil(phase) * 60 / au.bpm; au.beat = Math.ceil(phase);
   }
 }
@@ -2267,10 +2267,17 @@ function auTick(when){
   g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(vol, when + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
   o.connect(g); g.connect(c.destination); o.start(when); o.stop(when + 0.06);
 }
-function auSchedule(){ while(au.next < au.ctx.currentTime + 0.15){ if(auText(au.beat - au.off) !== null) auTick(au.next); au.beat++; au.next = au.t0 + au.beat * 60 / au.bpm; } }
+// iPad 唸字時，系統會暫停 AudioContext 的時鐘，所以拍子改用一般的時鐘計算；「答」聲在 AudioContext 能用時才播放
+const auNow = () => performance.now() / 1000;
+function auTickAt(t){
+  const c = au.ctx; if(!c) return;
+  if(c.state !== "running"){ try{ c.resume(); }catch(e){} return; }
+  try{ auTick(c.currentTime + Math.max(0, t - auNow())); }catch(e){}
+}
+function auSchedule(){ while(au.next < auNow() + 0.15){ if(auText(au.beat - au.off) !== null) auTickAt(au.next); au.beat++; au.next = au.t0 + au.beat * 60 / au.bpm; } }
 function auAnimate(){
   if(!au.on) return;
-  const phase = (au.ctx.currentTime - au.t0) * au.bpm / 60;
+  const phase = (auNow() - au.t0) * au.bpm / 60;
   const k = Math.max(0, Math.floor(phase + 0.01));
   if(k !== au.shown){
     au.shown = k;
@@ -2288,7 +2295,7 @@ function auStart(){
   au.ctx = au.ctx || new (window.AudioContext || window.webkitAudioContext)();
   try{ au.ctx.resume(); }catch(e){}
   unlockSpeech();
-  au.on = true; au.t0 = au.ctx.currentTime + 0.2; au.beat = 0; au.next = au.t0; au.shown = -1; au.said = -1; au.off = 0;
+  au.on = true; au.t0 = auNow() + 0.3; au.beat = 0; au.next = au.t0; au.shown = -1; au.said = -1; au.off = 0;
   auSchedule(); au.timer = setInterval(auSchedule, 40); auAnimate();
   $("auPlay").classList.add("listening"); $("auPlayLabel").textContent = "暫停";
   $("auIcon").innerHTML = '<rect x="7" y="5" width="3.5" height="14" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" fill="currentColor"/>';
@@ -2306,7 +2313,7 @@ $("auPlus").onclick = () => auSetBpm(au.bpm + 1);
 [...$("auModes").children].forEach(b => b.onclick = () => {
   au.mode = b.dataset.m; store.set("auMode", au.mode); auRender();
   if(au.on){   // 播放中換題目：從下一拍重新「預備」「開始」
-    const phase = (au.ctx.currentTime - au.t0) * au.bpm / 60;
+    const phase = (auNow() - au.t0) * au.bpm / 60;
     au.off = Math.floor(phase + 0.01) + 1; au.said = Math.floor(phase + 0.01);
   }else auShow("預備");
 });
