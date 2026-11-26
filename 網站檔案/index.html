@@ -240,6 +240,27 @@
     #rmView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .rmBpm b{font-size:48px} .rmCtl button{width:52px;height:52px;font-size:32px} .rmRange{padding:0 70px}
   }
+  /* ===== 聲音練習：自動語（共用節奏練習的版面） ===== */
+  #auView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "pic nav" "tools nav"}
+  #auView .top{grid-area:top;display:flex;justify-content:space-between;align-items:center;color:var(--soft);font-size:18px}
+  #auView .pic{grid-area:pic;background:var(--card);border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:20px;min-height:0}
+  #auView .tools{grid-area:tools}
+  #auView .rmStage{position:relative}
+  .auModes button{height:58px}
+  .auCard span.l3{font-size:min(20vh,160px)} .auCard span.l4{font-size:min(16vh,128px)}
+  .auBeat{display:flex;align-items:center;gap:16px}
+  .auBeat button{width:52px;height:52px;border-radius:50%;font-size:32px;font-weight:700;color:var(--accent);border:3px solid var(--line);line-height:1}
+  .auBpm{display:flex;align-items:baseline;gap:6px;min-width:130px;justify-content:center}
+  .auBpm b{font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+  .auBpm span{font-size:16px;color:var(--soft)}
+  .auBpm i{width:16px;height:16px;border-radius:50%;background:var(--line);align-self:center;margin-right:6px}
+  .auBpm i.on{background:var(--accent)}
+  @media (max-width:700px) and (orientation:portrait){
+    #auView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
+    .auModes{flex-wrap:wrap} .auModes button{flex:1 0 30%;height:46px} .auCard{width:100%} .auCard span{font-size:30vw;white-space:nowrap} .auCard span.l3{font-size:22vw} .auCard span.l4{font-size:17vw} .auCard span.long{font-size:14vw}
+  }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
@@ -430,7 +451,7 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>聲音練習</h1></div></div>
   <div class="secTitle">選一個練習</div>
-  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="mxStart">最大音量</button><button class="catBtn" id="crStart">音量漸強</button><button class="catBtn" id="rmStart">節奏練習</button></div>
+  <div class="catBtns" id="voiceBtns"><button class="catBtn" id="mptStart">最長發聲</button><button class="catBtn" id="glUpStart">滑音往上</button><button class="catBtn" id="glDownStart">滑音往下</button><button class="catBtn" id="mxStart">最大音量</button><button class="catBtn" id="crStart">音量漸強</button><button class="catBtn" id="rmStart">節奏練習</button><button class="catBtn" id="auStart">自動語</button></div>
 </div>
 <div id="rmView" class="hidden">
   <div class="top"><span>聲音練習・節奏練習</span><span></span></div>
@@ -466,6 +487,23 @@
   </div>
   <div class="tools">
     <button class="mic" id="rmPlay"><svg id="rmIcon" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg><span id="rmPlayLabel">開始</span></button>
+  </div>
+</div>
+<div id="auView" class="hidden">
+  <div class="top"><span>聲音練習・自動語</span>
+    <div class="gTopR"><button class="levelBtn" id="auSound"><span data-l="on">有聲音</span><span data-l="off">純文字</span></button></div></div>
+  <div class="pic">
+    <div class="rmStage">
+      <div class="rmShow"><div class="rmCard auCard"><span id="auItem">預備</span></div></div>
+      <div class="rmModes auModes" id="auModes"><button data-m="num">數字</button><button data-m="zodiac">生肖</button><button data-m="week">星期</button><button data-m="month">月份</button><button data-m="date">日期</button><button data-m="season">季節</button></div>
+    </div>
+    <div class="auBeat"><button id="auMinus" aria-label="減慢">−</button><div class="auBpm"><i id="auDot"></i><b id="auBpmNum">60</b><span>BPM</span></div><button id="auPlus" aria-label="加快">＋</button></div>
+  </div>
+  <div class="nav">
+    <button id="auHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
+  </div>
+  <div class="tools">
+    <button class="mic" id="auPlay"><svg id="auIcon" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z" fill="currentColor"/></svg><span id="auPlayLabel">開始</span></button>
   </div>
 </div>
 <div id="mxView" class="hidden">
@@ -696,7 +734,7 @@ const THEMES = [
   { id: "voice", name: "聲音練習", page: "voiceView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","mnSetupView","mlSetupView","mrSetupView","mptView","glView","crView","mxView","rmView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","auView","mnSetupView","mlSetupView","mrSetupView","mptView","glView","crView","mxView","rmView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -2175,6 +2213,106 @@ async function startMulti(kind, c, btn){
     showPage("readView"); rShow();
   }
 }
+</script>
+<script>
+// ===================== 聲音練習：自動語 =====================
+// 每一拍顯示一個詞（可選擇同時唸出來）；開始時先「預備」「開始」兩拍
+const zhNum = n => { const d = "零一二三四五六七八九"; return n <= 10 ? (n === 10 ? "十" : d[n]) : n < 20 ? "十" + d[n - 10] : d[Math.floor(n / 10)] + "十" + (n % 10 ? d[n % 10] : ""); };
+const AU_SEQ = {
+  num: Array.from({length: 20}, (_, i) => String(i + 1)),
+  zodiac: ["鼠","牛","虎","兔","龍","蛇","馬","羊","猴","雞","狗","豬"],
+  week: ["星期一","星期二","星期三","星期四","星期五","星期六","星期天"],
+  month: Array.from({length: 12}, (_, i) => zhNum(i + 1) + "月"),
+  date: Array.from({length: 31}, (_, i) => zhNum(i + 1) + "號"),
+  season: ["春","夏","秋","冬"],
+};
+let au = { bpm: Math.min(90, Math.max(40, store.get("auBpm", 60))), mode: store.get("auMode", "num"), sound: store.get("auSound", "on"),
+           on: false, ctx: null, t0: 0, next: 0, beat: 0, raf: 0, timer: 0, off: 0, shown: -1, said: -1 };
+// 第 i 拍（從開始算）要顯示的字：預備、開始、題目…；唸完一輪回傳 null（自動停止）
+function auText(i){
+  if(i < 0) return "預備";
+  if(i < 2) return ["預備","開始"][i];
+  const seq = AU_SEQ[au.mode];
+  return i - 2 < seq.length ? seq[i - 2] : null;
+}
+function auShow(text){
+  const el = $("auItem"); el.textContent = text;
+  el.className = text === "再來一次" ? "long" : text.length >= 4 ? "l4" : text.length === 3 ? "l3" : "";
+  void el.offsetWidth; if(au.on) el.classList.add("pop");
+}
+function auSay(text){
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-TW"; u.rate = Math.min(1.5, 0.9 + (au.bpm - 40) / 100);   // 拍子越快唸得越快
+  const v = zhVoice(); if(v) u.voice = v;
+  speechSynthesis.speak(u);
+}
+function auRender(){
+  [...$("auModes").children].forEach(b => b.classList.toggle("on", b.dataset.m === au.mode));
+  $("auSound").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.l === au.sound));
+  $("auBpmNum").textContent = au.bpm;
+}
+function auSetBpm(v){
+  const old = au.bpm;
+  au.bpm = Math.min(90, Math.max(40, Math.round(v))); store.set("auBpm", au.bpm); auRender();
+  if(au.on && old !== au.bpm && au.ctx){   // 播放中改速度：從目前位置接著算
+    const now = au.ctx.currentTime, phase = (now - au.t0) * old / 60;
+    au.t0 = now - phase * 60 / au.bpm; au.next = au.t0 + Math.ceil(phase) * 60 / au.bpm; au.beat = Math.ceil(phase);
+  }
+}
+function auTick(when){
+  const c = au.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = "square"; o.frequency.value = 1500;
+  const vol = au.sound === "on" ? 0.12 : 0.35;   // 有聲音時「答」聲小一點，不蓋過唸的字
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(vol, when + 0.002); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+  o.connect(g); g.connect(c.destination); o.start(when); o.stop(when + 0.06);
+}
+function auSchedule(){ while(au.next < au.ctx.currentTime + 0.15){ if(auText(au.beat - au.off) !== null) auTick(au.next); au.beat++; au.next = au.t0 + au.beat * 60 / au.bpm; } }
+function auAnimate(){
+  if(!au.on) return;
+  const phase = (au.ctx.currentTime - au.t0) * au.bpm / 60;
+  const k = Math.max(0, Math.floor(phase + 0.01));
+  if(k !== au.shown){
+    au.shown = k;
+    const t = auText(k - au.off);
+    if(t === null){ auStop(true); return; }   // 一輪唸完：停下來，畫面留在最後一個字
+    auShow(t);
+  }
+  // 語音提早一點點開始，聽起來才會剛好在拍子上
+  const ks = Math.max(0, Math.floor(phase + 0.12));
+  if(au.sound === "on" && ks !== au.said){ au.said = ks; const t = auText(ks - au.off); if(t !== null) auSay(t); }
+  $("auDot").classList.toggle("on", phase - Math.floor(phase) < 0.25);
+  au.raf = requestAnimationFrame(auAnimate);
+}
+function auStart(){
+  au.ctx = au.ctx || new (window.AudioContext || window.webkitAudioContext)();
+  try{ au.ctx.resume(); }catch(e){}
+  unlockSpeech();
+  au.on = true; au.t0 = au.ctx.currentTime + 0.2; au.beat = 0; au.next = au.t0; au.shown = -1; au.said = -1; au.off = 0;
+  auSchedule(); au.timer = setInterval(auSchedule, 40); auAnimate();
+  $("auPlay").classList.add("listening"); $("auPlayLabel").textContent = "暫停";
+  $("auIcon").innerHTML = '<rect x="7" y="5" width="3.5" height="14" fill="currentColor"/><rect x="13.5" y="5" width="3.5" height="14" fill="currentColor"/>';
+}
+function auStop(finished){
+  au.on = false; clearInterval(au.timer); cancelAnimationFrame(au.raf);
+  if(!finished){ speechSynthesis.cancel(); auShow("預備"); }   // 自動唸完時不打斷最後一個字的聲音
+  au.off = 0; $("auDot").classList.remove("on");
+  $("auPlay").classList.remove("listening"); $("auPlayLabel").textContent = "開始";
+  $("auIcon").innerHTML = '<path d="M8 5l11 7-11 7z" fill="currentColor"/>';
+}
+$("auPlay").onclick = () => au.on ? auStop() : auStart();
+$("auMinus").onclick = () => auSetBpm(au.bpm - 1);
+$("auPlus").onclick = () => auSetBpm(au.bpm + 1);
+[...$("auModes").children].forEach(b => b.onclick = () => {
+  au.mode = b.dataset.m; store.set("auMode", au.mode); auRender();
+  if(au.on){   // 播放中換題目：從下一拍重新「預備」「開始」
+    const phase = (au.ctx.currentTime - au.t0) * au.bpm / 60;
+    au.off = Math.floor(phase + 0.01) + 1; au.said = Math.floor(phase + 0.01);
+  }else auShow("預備");
+});
+$("auSound").onclick = () => { au.sound = au.sound === "on" ? "off" : "on"; store.set("auSound", au.sound); if(au.sound === "off") speechSynthesis.cancel(); auRender(); };
+$("auStart").onclick = () => { auStop(); auRender(); showPage("auView"); };
+$("auHome").onclick = () => { auStop(); showPage("voiceView"); };
 </script>
 </body>
 </html>
