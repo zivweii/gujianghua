@@ -262,13 +262,13 @@
     .auModes{flex-wrap:wrap} .auModes button{flex:1 0 30%;height:46px} .auCard{width:100%} .auCard span{font-size:30vw;white-space:nowrap} .auCard span.l3{font-size:22vw} .auCard span.l4{font-size:17vw} .auCard span.long{font-size:14vw}
   }
   /* ===== 對話練習 ===== */
-  :root{--ask:#2F6DB5;--ans:#D9771E}
+  :root{--ask:#4F7194;--ans:#B07A4F}
   #cvView{height:100dvh;display:grid;gap:16px;
     padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
     grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "boxes nav" "tools nav"}
   .cvBoxes{grid-area:boxes;display:grid;grid-template-columns:1fr 1fr;gap:18px;min-height:0}
   .cvBox{background:#fff;border-radius:28px;border:12px solid var(--c);color:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;min-height:0;position:relative;transition:box-shadow .2s}
-  .cvBox.ask{--c:var(--ask);--cf:rgba(47,109,181,.3);--cb:#EEF4FB} .cvBox.answer{--c:var(--ans);--cf:rgba(217,119,30,.3);--cb:#FDF3E9}
+  .cvBox.ask{--c:var(--ask);--cf:rgba(79,113,148,.25);--cb:#F1F4F7} .cvBox.answer{--c:var(--ans);--cf:rgba(176,122,79,.25);--cb:#F8F2EC}
   .cvWho{position:absolute;top:12px;left:18px;font-size:24px;font-weight:700}
   .cvText{font-size:42px;font-weight:700;line-height:1.35;text-align:center;letter-spacing:1px;word-break:break-all}
   .cvText.dim{opacity:.35}
@@ -278,6 +278,12 @@
   .cvBox.flash{animation:cvFlash .7s ease-in-out infinite}
   @keyframes cvFlash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 14px var(--cf);background:var(--cb)}}
   .cvMicSlot:empty{display:none}
+  .cvBoxes{position:relative}
+  #cvDone{position:absolute;inset:0;z-index:5;background:var(--card);border-radius:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px}
+  #cvDone.hidden{display:none}
+  #cvDone h2{font-size:52px;margin:0;color:var(--accent)} #cvDone p{font-size:24px;color:var(--soft);margin:0}
+  #cvDone .row{display:flex;gap:20px} #cvDone button{padding:20px 34px;font-size:26px;font-weight:700;border:3px solid var(--line);border-radius:18px}
+  #cvDone #cvAgain{background:var(--accent);color:#fff;border-color:var(--accent)}
   .cvMic{background:var(--c,var(--accent))}
   .cvMic.listening{background:#C2553F}
   .cvRole span[data-r="ask"].on{background:var(--ask)} .cvRole span[data-r="answer"].on{background:var(--ans)}
@@ -677,6 +683,8 @@
     <div class="gTopR"><button class="levelBtn cvRole" id="cvRole"><span data-r="ask">問</span><span data-r="answer">答</span></button><span id="cvProgress"></span></div></div>
   <div class="cvBoxes">
     <div class="cvBox ask" id="cvAsk"><div class="cvWho" id="cvAskWho">問</div><div class="cvText" id="cvAskText"></div><div class="cvHeard" id="cvAskHeard"></div><div class="cvMicSlot" id="cvAskMic"></div></div>
+    <div id="cvDone" class="hidden"><h2>恭喜完成！</h2><p id="cvDoneText"></p>
+      <div class="row"><button id="cvAgain">再來一次</button><button id="cvMenu">回到選單</button></div></div>
     <div class="cvBox answer" id="cvAns"><div class="cvWho" id="cvAnsWho">答</div><div class="cvText" id="cvAnsText"></div><div class="cvHeard" id="cvAnsHeard"></div><div class="cvMicSlot" id="cvAnsMic"></div></div>
   </div>
   <div class="nav">
@@ -785,8 +793,8 @@ const THEMES = [
   { id: "flisten", name: "功能性詞彙聽理解", page: "flSetupView" },
   { id: "fread", name: "功能性詞彙讀理解", page: "frSetupView" },
   { id: "class", name: "分類練習", page: "classView" },
-  { id: "voice", name: "聲音練習", page: "voiceView" },
   { id: "conv", name: "對話練習", page: "convView" },
+  { id: "voice", name: "聲音練習", page: "voiceView" },
 ];
 let theme = null;
 const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","auView","convView","cvView","mnSetupView","mlSetupView","mrSetupView","mptView","glView","crView","mxView","rmView"];
@@ -2432,10 +2440,22 @@ function cvRender(){
   $("cvReplayLabel").textContent = patientAsks ? "語音提示" : "再問一次";
   $("cvProgress").textContent = `${cv.pos + 1} / ${CONV[cv.topic].items.length}`;
   $("cvPrev").disabled = cv.pos === 0;
-  $("cvNext").disabled = cv.pos === CONV[cv.topic].items.length - 1;
+  $("cvNext").disabled = false;
 }
+const cvLast = () => cv.pos === CONV[cv.topic].items.length - 1;
+// 12 題都做完：出現「恭喜完成！」和「再來一次」
+function cvFinish(){
+  cvStopListening(); cv.token++; speechSynthesis.cancel();
+  document.querySelectorAll(".cvBox").forEach(b => b.classList.remove("flash"));
+  $("cvDoneText").textContent = `${CONV[cv.topic].name}・${CONV[cv.topic].items.length} 題都練習完了`;
+  $("cvDone").classList.remove("hidden"); $("cvNext").disabled = true;
+  chime();
+}
+// 最後一題完成後，等一下再出現完成畫面
+function cvMaybeFinish(){ if(!cvLast()) return; const my = cv.token; setTimeout(() => { if(my === cv.token) cvFinish(); }, 1800); }
 function cvShow(){
   cvStopListening(); speechSynthesis.cancel(); cv.token++; cv.asked = false;
+  $("cvDone").classList.add("hidden");
   document.querySelectorAll(".cvBox").forEach(b => b.classList.remove("flash"));
   cvRender();
   if(cv.role === "answer") setTimeout(() => cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAns")), 400);   // 系統先問
@@ -2445,7 +2465,9 @@ function cvStart(topic){ unlockSpeech(); cv.topic = topic; cv.pos = 0; $("cvName
 document.querySelectorAll("#convBtns [data-topic]").forEach(b => b.onclick = () => cvStart(b.dataset.topic));
 $("cvRole").onclick = () => { cv.role = cv.role === "ask" ? "answer" : "ask"; store.set("cvRole", cv.role); cvShow(); };
 $("cvPrev").onclick = () => { if(cv.pos > 0){ cv.pos--; cvShow(); } };
-$("cvNext").onclick = () => { if(cv.pos < CONV[cv.topic].items.length - 1){ cv.pos++; cvShow(); } };
+$("cvNext").onclick = () => { if(!cvLast()){ cv.pos++; cvShow(); } else cvFinish(); };
+$("cvAgain").onclick = () => { cv.pos = 0; cvShow(); };
+$("cvMenu").onclick = () => { cvStopListening(); cv.token++; speechSynthesis.cancel(); showPage("convView"); };
 $("cvHome").onclick = () => { cvStopListening(); cv.token++; speechSynthesis.cancel(); showPage("convView"); };
 // 選「答」：再問一次；選「問」：唸出要問的問題給病人聽（示範）
 $("cvReplay").onclick = () => cv.role === "answer" ? cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAns")) : cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAsk"));
@@ -2472,12 +2494,12 @@ $("cvMic").onclick = () => {
     if(!alts.length){ msg("", "沒有聽清楚，請再按一次"); return; }
     const it = cvItem();
     if(cv.role === "answer"){   // 病人回答：內容每個人不同，有說出來就算完成
-      msg("ok", `很好！你說：${said}`); chime();
+      msg("ok", `很好！你說：${said}`); chime(); cvMaybeFinish();
     }else{                     // 病人問問題：聽到關鍵字就由系統回答
       if(alts.some(t => it.key.some(k => t.includes(k)))){
         msg("ok", `很好！你問：${said}`); chime();
         cv.asked = true; $("cvAnsText").textContent = it.sys; $("cvAnsText").classList.remove("dim");
-        setTimeout(() => cvSpeak(it.say || it.sys, "cvAns"), 700);
+        setTimeout(() => cvSpeak(it.say || it.sys, "cvAns", cvMaybeFinish), 700);
       }else msg("", `聽到：${said}　再試一次`);
     }
   };
