@@ -261,6 +261,34 @@
     #auView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "pic" "tools";gap:12px}
     .auModes{flex-wrap:wrap} .auModes button{flex:1 0 30%;height:46px} .auCard{width:100%} .auCard span{font-size:30vw;white-space:nowrap} .auCard span.l3{font-size:22vw} .auCard span.l4{font-size:17vw} .auCard span.long{font-size:14vw}
   }
+  /* ===== 對話練習 ===== */
+  :root{--ask:#2F6DB5;--ans:#D9771E}
+  #cvView{height:100dvh;display:grid;gap:16px;
+    padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;grid-template-areas:"top top" "boxes nav" "tools nav"}
+  .cvBoxes{grid-area:boxes;display:grid;grid-template-columns:1fr 1fr;gap:18px;min-height:0}
+  .cvBox{background:#fff;border-radius:28px;border:12px solid var(--c);color:var(--c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;min-height:0;position:relative;transition:box-shadow .2s}
+  .cvBox.ask{--c:var(--ask);--cf:rgba(47,109,181,.3);--cb:#EEF4FB} .cvBox.answer{--c:var(--ans);--cf:rgba(217,119,30,.3);--cb:#FDF3E9}
+  .cvWho{position:absolute;top:12px;left:18px;font-size:24px;font-weight:700}
+  .cvText{font-size:42px;font-weight:700;line-height:1.35;text-align:center;letter-spacing:1px;word-break:break-all}
+  .cvText.dim{opacity:.35}
+  .cvHeard{font-size:20px;color:var(--soft);text-align:center;min-height:0}
+  .cvHeard:empty{display:none}
+  .cvHeard.ok{color:var(--ok);font-size:26px;font-weight:700}
+  .cvBox.flash{animation:cvFlash .7s ease-in-out infinite}
+  @keyframes cvFlash{0%,100%{box-shadow:0 0 0 0 transparent}50%{box-shadow:0 0 0 14px var(--cf);background:var(--cb)}}
+  .cvMicSlot:empty{display:none}
+  .cvMic{background:var(--c,var(--accent))}
+  .cvMic.listening{background:#C2553F}
+  .cvRole span[data-r="ask"].on{background:var(--ask)} .cvRole span[data-r="answer"].on{background:var(--ans)}
+  .cvRole span{font-size:20px;padding:6px 22px}
+  #convBtns .catBtn{color:var(--accent);font-size:28px;font-weight:700;height:96px}
+  #cvView .tools{grid-area:tools}
+  @media (max-width:700px) and (orientation:portrait){
+    #cvView{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto 1fr auto;grid-template-areas:"top" "nav" "boxes" "tools";gap:12px}
+    #cvView .nav{flex-direction:row} #cvView .nav button{flex:1;width:auto;height:56px;flex-direction:row;font-size:16px}
+    .cvBoxes{grid-template-columns:1fr;grid-template-rows:1fr 1fr;gap:12px} .cvBox{border-width:8px;padding:14px;gap:8px} .cvText{font-size:28px} .cvWho{font-size:18px;position:static;align-self:flex-start;margin-bottom:-4px} .cvHeard.ok{font-size:18px} .cvMic{width:84px;height:84px}
+  }
   /* ===== 分類練習 ===== */
   .menuPage{height:100dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     padding:max(20px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left))}
@@ -636,6 +664,32 @@
   <div class="catBtns" id="mrCats"></div>
 </div>
 
+<!-- 對話練習 -->
+<div id="convView" class="menuPage hidden">
+  <div class="homeTop"><div class="catHead">
+    <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
+    <h1>對話練習</h1></div></div>
+  <div class="secTitle">選一個主題</div>
+  <div class="catBtns" id="convBtns"><button class="catBtn" data-topic="basic">基本資料</button></div>
+</div>
+<div id="cvView" class="hidden">
+  <div class="top"><span id="cvName">對話練習・基本資料</span>
+    <div class="gTopR"><button class="levelBtn cvRole" id="cvRole"><span data-r="ask">問</span><span data-r="answer">答</span></button><span id="cvProgress"></span></div></div>
+  <div class="cvBoxes">
+    <div class="cvBox ask" id="cvAsk"><div class="cvWho" id="cvAskWho">問</div><div class="cvText" id="cvAskText"></div><div class="cvHeard" id="cvAskHeard"></div><div class="cvMicSlot" id="cvAskMic"></div></div>
+    <div class="cvBox answer" id="cvAns"><div class="cvWho" id="cvAnsWho">答</div><div class="cvText" id="cvAnsText"></div><div class="cvHeard" id="cvAnsHeard"></div><div class="cvMicSlot" id="cvAnsMic"></div></div>
+  </div>
+  <div class="nav">
+    <button id="cvPrev"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>上一題</button>
+    <button id="cvNext"><svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>下一題</button>
+    <button id="cvHome"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>回到選單</button>
+  </div>
+  <div class="tools">
+    <button class="tool" id="cvReplay"><svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 010 7"/><path d="M18.5 5.5a9 9 0 010 13"/></svg><span id="cvReplayLabel">再問一次</span></button>
+  </div>
+  <button class="mic cvMic" id="cvMic"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0"/><path d="M12 18v3"/></svg><span id="cvMicLabel">按我說</span></button>
+</div>
+
 <!-- 功能性詞彙聽理解／讀理解：選單 -->
 <div id="flSetupView" class="menuPage hidden">
   <div class="homeTop"><div class="catHead">
@@ -732,9 +786,10 @@ const THEMES = [
   { id: "fread", name: "功能性詞彙讀理解", page: "frSetupView" },
   { id: "class", name: "分類練習", page: "classView" },
   { id: "voice", name: "聲音練習", page: "voiceView" },
+  { id: "conv", name: "對話練習", page: "convView" },
 ];
 let theme = null;
-const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","auView","mnSetupView","mlSetupView","mrSetupView","mptView","glView","crView","mxView","rmView"];
+const PAGES = ["themeView","homeView","practiceView","classView","groupSetupView","oddView","groupView","listenSetupView","listenView","readSetupView","readView","flSetupView","frSetupView","voiceView","auView","convView","cvView","mnSetupView","mlSetupView","mrSetupView","mptView","glView","crView","mxView","rmView"];
 function showPage(id){ PAGES.forEach(p => $(p).classList.toggle("hidden", p !== id)); }
 THEMES.forEach(t => {
   const b = document.createElement("button");
@@ -2320,6 +2375,120 @@ $("auPlus").onclick = () => auSetBpm(au.bpm + 1);
 $("auSound").onclick = () => { au.sound = au.sound === "on" ? "off" : "on"; store.set("auSound", au.sound); if(au.sound === "off") speechSynthesis.cancel(); auRender(); };
 $("auStart").onclick = () => { auStop(); auRender(); showPage("auView"); };
 $("auHome").onclick = () => { auStop(); showPage("voiceView"); };
+</script>
+<script>
+// ===================== 對話練習 =====================
+// 左邊＝問的人（藍色），右邊＝答的人（橘色）。病人選「答」：系統問、病人答；選「問」：病人問、系統答
+const CONV = {
+  basic: { name: "基本資料", items: [
+    { q: "您好", a: "您好", sys: "您好", key: ["好"] },
+    { q: "你叫什麼名字？", a: "我叫＿＿＿＿", sys: "我叫王義安", key: ["名字","叫什麼","叫甚麼","貴姓"] },
+    { q: "你今年幾歲？", a: "我今年＿＿歲", sys: "我今年58歲", key: ["幾歲","歲","年紀"] },
+    { q: "你的生日是何時？", a: "我的生日是＿＿月＿＿號", sys: "我的生日是5月3號", key: ["生日"] },
+    { q: "你屬什麼生肖？", a: "我屬＿＿＿", sys: "我屬龍", key: ["生肖","屬什麼","屬甚麼","屬"] },
+    { q: "你住在哪裡？", a: "我住在＿＿＿", sys: "我住在台中市北屯區天津路一段351號", key: ["住","哪裡","那裡"] },
+    { q: "你的手機號碼是多少？", a: "我的手機號碼是＿＿＿＿", sys: "我的手機號碼是0900123456", say: "我的手機號碼是 0 9 0 0, 1 2 3, 4 5 6", key: ["手機","電話","號碼"] },
+    { q: "你有幾個兄弟姐妹？", a: "我有＿＿＿＿＿", sys: "我有一個姊姊一個弟弟", key: ["兄弟","姐妹","姊妹"] },
+    { q: "你有沒有結婚？", a: "我＿＿＿", sys: "我沒有結婚", key: ["結婚","結過婚"] },
+    { q: "你有幾個孩子？", a: "我有＿＿個孩子", sys: "我沒有孩子", key: ["孩子","小孩","兒子","女兒"] },
+    { q: "你的教育程度呢？", a: "＿＿", sys: "高職", key: ["教育","程度","學歷","讀書","念書"] },
+    { q: "你的興趣是什麼？", a: "我的興趣是＿＿＿", sys: "我的興趣是看書", key: ["興趣","喜歡"] },
+  ]},
+};
+let cv = { topic: null, pos: 0, role: store.get("cvRole", "answer"), rec: null, listening: false, token: 0, asked: false };
+const cvItem = () => CONV[cv.topic].items[cv.pos];
+// 唸一句話，同時讓那個框框閃爍；唸完後執行 done
+function cvSpeak(text, boxId, done){
+  const my = ++cv.token;
+  speechSynthesis.cancel();
+  document.querySelectorAll(".cvBox").forEach(b => b.classList.remove("flash"));
+  const box = $(boxId); box.classList.add("flash");
+  let ended = false;
+  const finish = () => { if(ended || my !== cv.token) return; ended = true; box.classList.remove("flash"); done && done(); };
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-TW"; u.rate = 0.85; const v = zhVoice(); if(v) u.voice = v;
+  u.onend = finish; u.onerror = finish;
+  speechSynthesis.speak(u);
+  setTimeout(finish, 1500 + text.length * 380);   // iPad 有時候不會通知唸完，時間到就當作唸完
+}
+// 輪到病人說：那個框框閃一下，麥克風放進去
+function cvPrompt(boxId){
+  const my = cv.token, box = $(boxId);
+  box.classList.add("flash");
+  setTimeout(() => { if(my === cv.token && !cv.listening) box.classList.remove("flash"); }, 2200);
+}
+function cvRender(){
+  const it = cvItem(), patientAsks = cv.role === "ask";
+  $("cvRole").querySelectorAll("span").forEach(sp => sp.classList.toggle("on", sp.dataset.r === cv.role));
+  $("cvAskWho").textContent = patientAsks ? "問（你）" : "問";
+  $("cvAnsWho").textContent = patientAsks ? "答" : "答（你）";
+  $("cvAskText").textContent = it.q; $("cvAskText").classList.remove("dim");
+  $("cvAnsText").textContent = patientAsks ? (cv.asked ? it.sys : it.a) : it.a;
+  $("cvAnsText").classList.toggle("dim", patientAsks && !cv.asked);
+  $("cvAskHeard").textContent = ""; $("cvAnsHeard").textContent = "";
+  $("cvAskHeard").className = $("cvAnsHeard").className = "cvHeard";
+  $(patientAsks ? "cvAskMic" : "cvAnsMic").appendChild($("cvMic"));
+  $("cvMic").style.setProperty("--c", patientAsks ? "var(--ask)" : "var(--ans)");
+  $("cvReplayLabel").textContent = patientAsks ? "語音提示" : "再問一次";
+  $("cvProgress").textContent = `${cv.pos + 1} / ${CONV[cv.topic].items.length}`;
+  $("cvPrev").disabled = cv.pos === 0;
+  $("cvNext").disabled = cv.pos === CONV[cv.topic].items.length - 1;
+}
+function cvShow(){
+  cvStopListening(); speechSynthesis.cancel(); cv.token++; cv.asked = false;
+  document.querySelectorAll(".cvBox").forEach(b => b.classList.remove("flash"));
+  cvRender();
+  if(cv.role === "answer") setTimeout(() => cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAns")), 400);   // 系統先問
+  else cvPrompt("cvAsk");                                                                                  // 病人先問
+}
+function cvStart(topic){ unlockSpeech(); cv.topic = topic; cv.pos = 0; $("cvName").textContent = `對話練習・${CONV[topic].name}`; showPage("cvView"); cvShow(); }
+document.querySelectorAll("#convBtns [data-topic]").forEach(b => b.onclick = () => cvStart(b.dataset.topic));
+$("cvRole").onclick = () => { cv.role = cv.role === "ask" ? "answer" : "ask"; store.set("cvRole", cv.role); cvShow(); };
+$("cvPrev").onclick = () => { if(cv.pos > 0){ cv.pos--; cvShow(); } };
+$("cvNext").onclick = () => { if(cv.pos < CONV[cv.topic].items.length - 1){ cv.pos++; cvShow(); } };
+$("cvHome").onclick = () => { cvStopListening(); cv.token++; speechSynthesis.cancel(); showPage("convView"); };
+// 選「答」：再問一次；選「問」：唸出要問的問題給病人聽（示範）
+$("cvReplay").onclick = () => cv.role === "answer" ? cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAns")) : cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAsk"));
+
+function cvSetListening(on){ cv.listening = on; $("cvMic").classList.toggle("listening", on); $("cvMicLabel").textContent = on ? "聽你說…" : "按我說";
+  $(cv.role === "ask" ? "cvAsk" : "cvAns").classList.toggle("flash", on); }
+function cvStopListening(){ if(cv.rec){ cv.rec.onresult = cv.rec.onerror = cv.rec.onend = null; try{ cv.rec.abort(); }catch(e){} cv.rec = null; } cvSetListening(false); }
+$("cvMic").onclick = () => {
+  const heardEl = $(cv.role === "ask" ? "cvAskHeard" : "cvAnsHeard");
+  const msg = (cls, t) => { heardEl.className = "cvHeard " + cls; heardEl.textContent = t; };
+  if(!SR){ msg("", "這台裝置不支援語音辨識"); return; }
+  if(STANDALONE){ msg("", "主畫面模式無法使用麥克風，請改用 Safari 打開"); return; }
+  if(cv.listening){ cv.rec && cv.rec.stop(); return; }
+  cv.token++; speechSynthesis.cancel();
+  document.querySelectorAll(".cvBox").forEach(b => b.classList.remove("flash"));
+  msg("", "");
+  const rec = cv.rec = new SR();
+  rec.lang = "zh-TW"; rec.interimResults = false; rec.maxAlternatives = 5; rec.continuous = false;
+  let got = false;
+  rec.onresult = e => {
+    got = true;
+    const alts = [...e.results[0]].map(a => clean(a.transcript)).filter(Boolean);
+    const said = [...e.results[0]][0].transcript.trim();
+    if(!alts.length){ msg("", "沒有聽清楚，請再按一次"); return; }
+    const it = cvItem();
+    if(cv.role === "answer"){   // 病人回答：內容每個人不同，有說出來就算完成
+      msg("ok", `很好！你說：${said}`); chime();
+    }else{                     // 病人問問題：聽到關鍵字就由系統回答
+      if(alts.some(t => it.key.some(k => t.includes(k)))){
+        msg("ok", `很好！你問：${said}`); chime();
+        cv.asked = true; $("cvAnsText").textContent = it.sys; $("cvAnsText").classList.remove("dim");
+        setTimeout(() => cvSpeak(it.say || it.sys, "cvAns"), 700);
+      }else msg("", `聽到：${said}　再試一次`);
+    }
+  };
+  rec.onerror = e => {
+    got = true;
+    msg("", {"not-allowed":"請允許使用麥克風","service-not-allowed":"請到「設定 › 一般 › 鍵盤」開啟聽寫",
+      "no-speech":"沒有聽到聲音，請再按一次","audio-capture":"找不到麥克風","network":"網路連線有問題"}[e.error] || "發生問題，請再按一次");
+  };
+  rec.onend = () => { cvSetListening(false); if(!got) msg("", "沒有聽到聲音，請再按一次"); };
+  try{ rec.start(); cvSetListening(true); }catch(e){ msg("", "無法啟動麥克風"); }
+};
 </script>
 </body>
 </html>
