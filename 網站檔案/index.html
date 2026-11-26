@@ -676,7 +676,7 @@
     <button class="back" data-back><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>主題</button>
     <h1>對話練習</h1></div></div>
   <div class="secTitle">選一個主題</div>
-  <div class="catBtns" id="convBtns"><button class="catBtn" data-topic="basic">基本資料</button></div>
+  <div class="catBtns" id="convBtns"><button class="catBtn" data-topic="basic">基本資料</button><button class="catBtn" data-topic="orient">定向感練習</button></div>
 </div>
 <div id="cvView" class="hidden">
   <div class="top"><span id="cvName">對話練習・基本資料</span>
@@ -684,7 +684,7 @@
   <div class="cvBoxes">
     <div class="cvBox ask" id="cvAsk"><div class="cvWho" id="cvAskWho">問</div><div class="cvText" id="cvAskText"></div><div class="cvHeard" id="cvAskHeard"></div><div class="cvMicSlot" id="cvAskMic"></div></div>
     <div id="cvDone" class="hidden"><h2>恭喜完成！</h2><p id="cvDoneText"></p>
-      <div class="row"><button id="cvAgain">再來一次</button><button id="cvMenu">回到選單</button></div></div>
+      <div class="row"><button id="cvAgain">再來一次</button></div></div>
     <div class="cvBox answer" id="cvAns"><div class="cvWho" id="cvAnsWho">答</div><div class="cvText" id="cvAnsText"></div><div class="cvHeard" id="cvAnsHeard"></div><div class="cvMicSlot" id="cvAnsMic"></div></div>
   </div>
   <div class="nav">
@@ -2402,7 +2402,24 @@ const CONV = {
     { q: "你的教育程度呢？", a: "＿＿", sys: "高職", key: ["教育","程度","學歷","讀書","念書"] },
     { q: "你的興趣是什麼？", a: "我的興趣是＿＿＿", sys: "我的興趣是看書", key: ["興趣","喜歡"] },
   ]},
+  // 定向感練習：日期、時間、季節由系統依照「現在」自動回答
+  orient: { name: "定向感練習", items: [
+    { q: "今天是民國幾年？", a: "今天是民國＿＿＿年", sys: () => `今天是民國${new Date().getFullYear() - 1911}年`, key: ["民國","幾年","哪一年"] },
+    { q: "今天是幾月幾號？", a: "今天是＿＿月＿＿號", sys: () => { const d = new Date(); return `今天是${d.getMonth() + 1}月${d.getDate()}號`; }, key: ["幾月","幾號","日期","幾日"] },
+    { q: "今天是星期幾？", a: "今天是星期＿＿＿", sys: () => "今天是星期" + "天一二三四五六"[new Date().getDay()], key: ["星期","禮拜"] },
+    { q: "現在是早上、下午還是晚上？", a: "現在是＿＿＿", sys: () => "現在是" + cvPeriod(), key: ["早上","下午","晚上"] },
+    { q: "現在是什麼時間？", a: "現在是＿＿點＿＿分", sys: () => { const d = new Date(), h = d.getHours() % 12 || 12, m = d.getMinutes(); return m ? `現在是${h}點${m}分` : `現在是${h}點`; }, key: ["時間","幾點","時候"] },
+    { q: "現在是什麼季節？", a: "現在是＿＿＿", sys: () => "現在是" + ["冬天","冬天","春天","春天","春天","夏天","夏天","夏天","秋天","秋天","秋天","冬天"][new Date().getMonth()], key: ["季節"] },
+    { q: "你現在在哪裡？", a: "我現在在＿＿＿＿", sys: "我現在在醫院", key: ["哪裡","那裡","什麼地方"] },
+    { q: "你現在在幾樓？", a: "我在＿＿樓", sys: "我在2樓", key: ["幾樓","樓"] },
+    { q: "你現在在哪個縣市？", a: "我在＿＿＿", sys: "我現在在台中市", key: ["縣市","縣","城市","哪個市"] },
+    { q: "你是誰？", a: "我是＿＿＿", sys: "我是老師", key: ["誰"] },
+    { q: "你旁邊有誰？", a: "旁邊有＿＿＿", sys: "旁邊有病人", key: ["旁邊","身邊"] },
+  ]},
 };
+// 早上 5–11 點、下午 12–17 點、其他時間晚上
+const cvPeriod = () => { const h = new Date().getHours(); return h >= 5 && h < 12 ? "早上" : h >= 12 && h < 18 ? "下午" : "晚上"; };
+const cvSys = it => typeof it.sys === "function" ? it.sys() : it.sys;   // 系統的回答（定向感的題目每次重新算）
 let cv = { topic: null, pos: 0, role: store.get("cvRole", "answer"), rec: null, listening: false, token: 0, asked: false };
 const cvItem = () => CONV[cv.topic].items[cv.pos];
 // 唸一句話，同時讓那個框框閃爍；唸完後執行 done
@@ -2431,7 +2448,7 @@ function cvRender(){
   $("cvAskWho").textContent = patientAsks ? "問（你）" : "問";
   $("cvAnsWho").textContent = patientAsks ? "答" : "答（你）";
   $("cvAskText").textContent = it.q; $("cvAskText").classList.remove("dim");
-  $("cvAnsText").textContent = patientAsks ? (cv.asked ? it.sys : it.a) : it.a;
+  $("cvAnsText").textContent = patientAsks ? (cv.asked ? cvSys(it) : it.a) : it.a;
   $("cvAnsText").classList.toggle("dim", patientAsks && !cv.asked);
   $("cvAskHeard").textContent = ""; $("cvAnsHeard").textContent = "";
   $("cvAskHeard").className = $("cvAnsHeard").className = "cvHeard";
@@ -2467,7 +2484,6 @@ $("cvRole").onclick = () => { cv.role = cv.role === "ask" ? "answer" : "ask"; st
 $("cvPrev").onclick = () => { if(cv.pos > 0){ cv.pos--; cvShow(); } };
 $("cvNext").onclick = () => { if(!cvLast()){ cv.pos++; cvShow(); } else cvFinish(); };
 $("cvAgain").onclick = () => { cv.pos = 0; cvShow(); };
-$("cvMenu").onclick = () => { cvStopListening(); cv.token++; speechSynthesis.cancel(); showPage("convView"); };
 $("cvHome").onclick = () => { cvStopListening(); cv.token++; speechSynthesis.cancel(); showPage("convView"); };
 // 選「答」：再問一次；選「問」：唸出要問的問題給病人聽（示範）
 $("cvReplay").onclick = () => cv.role === "answer" ? cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAns")) : cvSpeak(cvItem().q, "cvAsk", () => cvPrompt("cvAsk"));
@@ -2498,8 +2514,9 @@ $("cvMic").onclick = () => {
     }else{                     // 病人問問題：聽到關鍵字就由系統回答
       if(alts.some(t => it.key.some(k => t.includes(k)))){
         msg("ok", `很好！你問：${said}`); chime();
-        cv.asked = true; $("cvAnsText").textContent = it.sys; $("cvAnsText").classList.remove("dim");
-        setTimeout(() => cvSpeak(it.say || it.sys, "cvAns", cvMaybeFinish), 700);
+        const ans = cvSys(it);
+        cv.asked = true; $("cvAnsText").textContent = ans; $("cvAnsText").classList.remove("dim");
+        setTimeout(() => cvSpeak(it.say || ans, "cvAns", cvMaybeFinish), 700);
       }else msg("", `聽到：${said}　再試一次`);
     }
   };
