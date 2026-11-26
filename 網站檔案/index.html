@@ -495,7 +495,7 @@
   <div class="pic">
     <div class="rmStage">
       <div class="rmShow"><div class="rmCard auCard"><span id="auItem">預備</span></div></div>
-      <div class="rmModes auModes" id="auModes"><button data-m="num">數字</button><button data-m="zodiac">生肖</button><button data-m="week">星期</button><button data-m="month">月份</button><button data-m="date">日期</button><button data-m="season">季節</button></div>
+      <div class="rmModes auModes" id="auModes"><button data-m="num">數字</button><button data-m="zodiac">生肖</button><button data-m="season">季節</button><button data-m="week">星期</button><button data-m="month">月份</button><button data-m="date">日期</button></div>
     </div>
     <div class="auBeat"><button id="auMinus" aria-label="減慢">−</button><div class="auBpm"><i id="auDot"></i><b id="auBpmNum">60</b><span>BPM</span></div><button id="auPlus" aria-label="加快">＋</button></div>
   </div>
@@ -2287,7 +2287,7 @@ function auAnimate(){
   }
   // 語音提早一點點開始，聽起來才會剛好在拍子上
   const ks = Math.max(0, Math.floor(phase + 0.12));
-  if(au.sound === "on" && ks !== au.said){ au.said = ks; const t = auText(ks - au.off); if(t !== null) auSay(t); }
+  if(au.sound === "on" && ks !== au.said){ au.said = ks; const i = ks - au.off, t = auText(i); if(t !== null && i >= 2) auSay(t); }   // 「預備」「開始」只顯示、不唸
   $("auDot").classList.toggle("on", phase - Math.floor(phase) < 0.25);
   au.raf = requestAnimationFrame(auAnimate);
 }
